@@ -19,5 +19,10 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
   shortcutName: PropPrime Terminal
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  menuCategory: PropPrime
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
 extraMetadata:
   main: dist-electron/main.js
