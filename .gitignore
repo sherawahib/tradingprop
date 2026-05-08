@@ -1,0 +1,45 @@
+node_modules/
+dist/
+build/
+out/
+.cache/
+.parcel-cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Build artefacts that occasionally appear next to .tsx files
+apps/web/src/*.js
+apps/desktop/src/*.js
+apps/api/src/*.js
+
+# Local environment
+.env
+.env.local
+*.local
+
+# Electron unpacked builds
+apps/desktop/dist/
+apps/desktop/dist-electron/
+apps/desktop/release/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+.turbo/
+
+# Test/temp downloads
+*.exe.tmp
+
+# Local API persistence (regenerate from defaults)
+apps/api/data/state.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

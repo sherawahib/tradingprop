@@ -1,0 +1,23 @@
+appId: com.propprime.desktop
+productName: PropPrime Terminal
+# Hoisted monorepo installs: pin so electron-builder can download the Windows binary
+electronVersion: 42.0.0
+directories:
+  output: release
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+asar: true
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: PropPrime Terminal
+extraMetadata:
+  main: dist-electron/main.js

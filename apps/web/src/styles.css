@@ -1,0 +1,3938 @@
+/* ============================================================================
+ * PropPrime — full design system
+ * Marketing site, auth surfaces, client portal, partner hub, admin console,
+ * terminal chrome, and the legacy MetaTrader-style trading terminal.
+ * ==========================================================================*/
+
+:root {
+  --bg-0: #0a0d12;
+  --bg-1: #0e1218;
+  --bg-2: #131922;
+  --bg-3: #182030;
+  --bg-4: #1f2a3d;
+  --line-1: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.14);
+  --text-0: #e9eef7;
+  --text-1: #c9d2df;
+  --text-2: #93a0b3;
+  --text-3: #6b7892;
+  --accent: #5dd39e;
+  --accent-2: #6ce0a8;
+  --accent-3: #2fa97a;
+  --accent-glow: rgba(93, 211, 158, 0.32);
+  --warn: #f5b041;
+  --danger: #ef5b5b;
+  --info: #63b2ff;
+  --buy: #2fa97a;
+  --sell: #ef5b5b;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 12px 28px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 22px 60px rgba(0, 0, 0, 0.5);
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Mono", "Consolas", ui-monospace, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--bg-0);
+  color: var(--text-0);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+a,
+button {
+  color: inherit;
+}
+
+code,
+kbd {
+  font-family: var(--font-mono);
+}
+
+::selection {
+  background: var(--accent);
+  color: #08110c;
+}
+
+/* -- Shell ---------------------------------------------------------------- */
+
+.fxRoot {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(93, 211, 158, 0.15), transparent 60%),
+    radial-gradient(900px 500px at 0% 30%, rgba(99, 178, 255, 0.08), transparent 60%),
+    var(--bg-0);
+  display: flex;
+  flex-direction: column;
+}
+
+.fxAnnBar {
+  background: linear-gradient(90deg, #0c1118 0%, #0a0d12 100%);
+  border-bottom: 1px solid var(--line-1);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.fxAnnInner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 8px 24px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.fxAnnTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(93, 211, 158, 0.12);
+  color: var(--accent-2);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fxAnnText {
+  flex: 1;
+  min-width: 0;
+}
+
+.fxAnnCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--text-0);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  transition: border-color 0.15s;
+}
+
+.fxAnnCta:hover {
+  border-color: var(--accent);
+}
+
+.fxShellNav {
+  border-bottom: 1px solid var(--line-1);
+  background: rgba(10, 13, 18, 0.85);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.fxShellNavInner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  gap: 22px;
+  align-items: center;
+}
+
+.fxLogoBtn {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.fxLogoRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fxLogoMark {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-3));
+  box-shadow: 0 0 24px var(--accent-glow);
+  display: inline-block;
+}
+
+.fxLogoWord {
+  font-size: 18px;
+  letter-spacing: 0.02em;
+}
+
+.fxNavCenter {
+  flex: 1;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+}
+
+.fxNavLink {
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-1);
+  border: 1px solid transparent;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.fxNavLink:hover {
+  background: var(--bg-2);
+  color: var(--text-0);
+}
+
+.fxNavLinkActive {
+  background: var(--bg-3);
+  color: var(--accent-2);
+  border-color: var(--line-2);
+}
+
+.fxNavActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.fxLinkBtn {
+  background: transparent;
+  border: 0;
+  color: var(--text-1);
+  font-size: 14px;
+  padding: 6px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+
+.fxLinkBtn:hover {
+  color: var(--accent-2);
+  text-decoration-color: currentColor;
+}
+
+.fxCtaFilled {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-3));
+  color: #08110c;
+  font-weight: 600;
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: 10px 18px;
+  font-size: 14px;
+  box-shadow: 0 8px 22px rgba(47, 169, 122, 0.32);
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+
+.fxCtaFilled:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(47, 169, 122, 0.45);
+}
+
+.fxCtaFilled:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.fxCtaOutline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--text-0);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-md);
+  padding: 9px 16px;
+  font-size: 14px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.fxCtaOutline:hover {
+  border-color: var(--accent);
+  color: var(--accent-2);
+  background: rgba(93, 211, 158, 0.05);
+}
+
+.fxCtaOutline:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.fxSite {
+  flex: 1;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+  width: 100%;
+}
+
+.fxEyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  margin: 0 0 8px;
+}
+
+.fxEyebrowLight {
+  color: var(--text-2);
+}
+
+.fxTitleContrast {
+  color: var(--text-0);
+  font-size: 26px;
+  margin: 0 0 4px;
+}
+
+/* -- Hero ---------------------------------------------------------------- */
+
+.fxHero {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 52px;
+  align-items: center;
+  padding: 28px 0 36px;
+}
+
+@media (max-width: 980px) {
+  .fxHero {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fxHeroCopy {
+  max-width: 640px;
+}
+
+.fxHeroTitle {
+  font-size: clamp(34px, 5vw, 60px);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  margin: 0 0 18px;
+}
+
+.fxHeroAccent {
+  background: linear-gradient(135deg, var(--accent), #8fe8c2 60%, #c9f5dd);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.fxHeroLead {
+  font-size: 16px;
+  color: var(--text-1);
+  margin: 0 0 26px;
+}
+
+.fxHeroCtaRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.fxHeroProofs {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.fxHeroProofs li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Hero animated dummy dashboard */
+.fxHeroAside {
+  position: relative;
+}
+
+.fxHeroGlow {
+  position: absolute;
+  inset: -40px;
+  border-radius: 40px;
+  background:
+    radial-gradient(60% 50% at 50% 50%, rgba(93, 211, 158, 0.25), transparent 70%);
+  filter: blur(40px);
+  z-index: 0;
+}
+
+.fxDummyDash {
+  position: relative;
+  z-index: 1;
+  border: 1px solid var(--line-2);
+  background: linear-gradient(180deg, #121822 0%, #0d1117 100%);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.fxDummyDash-chrome {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-1);
+}
+
+.fxDummyDash-chrome span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--bg-4);
+}
+
+.fxDummyDash-chrome span:nth-child(1) {
+  background: #ef5b5b;
+}
+
+.fxDummyDash-chrome span:nth-child(2) {
+  background: #f5b041;
+}
+
+.fxDummyDash-chrome span:nth-child(3) {
+  background: var(--accent);
+}
+
+.fxDummyDash-body {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+}
+
+.fxDummyDash-nav {
+  padding: 14px 14px 18px;
+  border-right: 1px solid var(--line-1);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fxDummyDash-brand {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.fxDummyDash-navList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.fxDummyDash-navItem {
+  padding: 5px 8px;
+  border-radius: 6px;
+}
+
+.fxDummyDash-navItem--active {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+
+.fxDummyDash-navFoot {
+  margin-top: auto;
+}
+
+.fxDummyDash-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(93, 211, 158, 0.12);
+  color: var(--accent-2);
+  font-size: 11px;
+}
+
+.fxDummyDash-main {
+  padding: 14px 18px 20px;
+}
+
+.fxDummyDash-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.fxDummyDash-title {
+  font-weight: 600;
+  color: var(--text-0);
+}
+
+.fxDummyDash-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--accent-2);
+}
+
+.fxDummyDash-livePulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 var(--accent);
+  animation: fxPulse 1.6s ease-out infinite;
+}
+
+@keyframes fxPulse {
+  0% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  70% { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.fxDummyDash-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.fxDummyDash-kpi {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  padding: 10px;
+  border-radius: var(--radius-md);
+}
+
+.fxDummyDash-kpiLabel {
+  display: block;
+  font-size: 10px;
+  color: var(--text-3);
+  margin-bottom: 4px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fxDummyDash-kpi strong {
+  font-size: 14px;
+  color: var(--text-0);
+}
+
+.fxDummyDash-kpiUp {
+  color: var(--accent) !important;
+}
+
+.fxDummyDash-chartPanel {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-md);
+  padding: 12px 12px 14px;
+  margin-bottom: 12px;
+}
+
+.fxDummyDash-chartHead {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-2);
+  margin-bottom: 8px;
+}
+
+.fxDummyDash-chartTrend--up {
+  color: var(--accent);
+}
+
+.fxDummyDash-chartTrend--down {
+  color: var(--danger);
+}
+
+.fxDummyDash-chart {
+  position: relative;
+  height: 130px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.fxDummyDash-candle {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  transition: transform 0.7s ease-out;
+}
+
+.fxDummyDash-candleWick {
+  position: absolute;
+  left: 50%;
+  width: 1px;
+  background: currentColor;
+  transform: translateX(-50%);
+  opacity: 0.55;
+}
+
+.fxDummyDash-candleBody {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  background: currentColor;
+  border-radius: 1px;
+  transition: bottom 0.7s ease-out, height 0.7s ease-out;
+}
+
+.fxDummyDash-candle--up {
+  color: var(--accent);
+}
+
+.fxDummyDash-candle--down {
+  color: var(--danger);
+}
+
+.fxDummyDash-pos {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-md);
+  padding: 10px 12px 12px;
+}
+
+.fxDummyDash-posTitle {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fxDummyDash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.fxDummyDash-table th,
+.fxDummyDash-table td {
+  text-align: left;
+  padding: 4px 6px;
+  border-bottom: 1px dashed var(--line-1);
+}
+
+.fxDummyDash-table th {
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.fxDummyDash-numUp {
+  color: var(--accent);
+}
+
+.fxDummyDash-numDown {
+  color: var(--danger);
+}
+
+/* -- Strip / KPIs / sections -------------------------------------------- */
+
+.fxStripDark {
+  background: var(--bg-1);
+  border-top: 1px solid var(--line-1);
+  border-bottom: 1px solid var(--line-1);
+  margin: 12px -24px;
+  padding: 18px 24px;
+}
+
+.fxStripInner {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 700px) {
+  .fxStripInner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.fxStripItem {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  gap: 2px 12px;
+  align-items: center;
+}
+
+.fxStripItem svg {
+  grid-row: span 2;
+  color: var(--accent-2);
+}
+
+.fxStripItem strong {
+  font-size: 18px;
+  color: var(--text-0);
+}
+
+.fxStripItem span {
+  font-size: 12px;
+  color: var(--text-2);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fxSection {
+  padding: 48px 0;
+}
+
+.fxSectionMuted {
+  background: linear-gradient(180deg, var(--bg-1) 0%, transparent 100%);
+  margin: 0 -24px;
+  padding-left: 24px;
+  padding-right: 24px;
+  border-top: 1px solid var(--line-1);
+  border-bottom: 1px solid var(--line-1);
+}
+
+.fxSectionHeader {
+  max-width: 760px;
+  margin: 0 auto 28px;
+  text-align: center;
+}
+
+.fxSectionHeaderRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.fxSectionTitle {
+  font-size: clamp(24px, 3vw, 36px);
+  margin: 0 0 10px;
+  letter-spacing: -0.01em;
+}
+
+.fxSectionLead {
+  color: var(--text-1);
+  font-size: 15px;
+  margin: 0;
+}
+
+/* Programs grid (home) */
+.fxProgGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+.fxProgCard {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.fxProgCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-2);
+  box-shadow: var(--shadow-md);
+}
+
+.fxProgTitle {
+  font-size: 18px;
+  margin: 6px 0 6px;
+}
+
+.fxProgIntro {
+  color: var(--text-2);
+  font-size: 13.5px;
+  margin: 0 0 16px;
+}
+
+.fxProgChecklist {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 18px;
+  color: var(--text-1);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fxProgChecklist li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.fxProgChecklist li svg {
+  color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Feature grid */
+.fxFeatureGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.fxFeatureCard {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.fxFeatureIcon {
+  color: var(--accent-2);
+  margin-bottom: 10px;
+}
+
+.fxFeatureTitle {
+  font-size: 15px;
+  margin: 0 0 6px;
+}
+
+.fxFeatureBody {
+  color: var(--text-2);
+  font-size: 13px;
+  margin: 0;
+}
+
+.fxFeatureBadges {
+  list-style: none;
+  padding: 16px 0 0;
+  margin: 16px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px dashed var(--line-1);
+}
+
+.fxFeatureBadges li {
+  background: var(--bg-3);
+  color: var(--text-1);
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid var(--line-1);
+}
+
+/* Two-col panel (home / how) */
+.fxTwoColPanel {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 36px;
+  align-items: flex-start;
+}
+
+@media (max-width: 980px) {
+  .fxTwoColPanel {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fxStepList {
+  list-style: none;
+  counter-reset: step;
+  padding: 0;
+  margin: 22px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fxStepList li {
+  counter-increment: step;
+  position: relative;
+  padding: 14px 16px 14px 60px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-md);
+}
+
+.fxStepList li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 16px;
+  top: 14px;
+  font-family: var(--font-mono);
+  color: var(--accent-2);
+  font-size: 18px;
+}
+
+.fxStepList li strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 2px;
+}
+
+.fxStepList li span {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.fxFaqPanel {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+}
+
+.fxFaqTitle {
+  margin: 0 0 14px;
+  font-size: 18px;
+}
+
+.fxFaqList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fxFaqList li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-1);
+}
+
+.fxFaqList li svg {
+  color: var(--accent);
+  margin-top: 4px;
+}
+
+.fxFaqQ {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.fxFaqA {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.fxFaqAccord {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fxFaqAccordRow {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-md);
+}
+
+.fxFaqAccordRow svg {
+  color: var(--accent);
+  margin-top: 3px;
+}
+
+/* CTA block */
+.fxCtaBlock {
+  margin-top: 32px;
+  padding: 32px;
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(800px 400px at 100% -50%, rgba(93, 211, 158, 0.18), transparent 60%),
+    linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
+  border: 1px solid var(--line-2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.fxCtaBlockTitle {
+  font-size: 22px;
+  margin: 0 0 6px;
+}
+
+.fxCtaBlockLead {
+  color: var(--text-1);
+  margin: 0;
+}
+
+.fxCtaBlockBtns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* -- Programs page ------------------------------------------------------- */
+
+.fxProgramsHero {
+  text-align: center;
+  padding: 36px 0 12px;
+}
+
+.fxProgTabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 18px 0 24px;
+}
+
+.fxProgTab {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  color: var(--text-1);
+  padding: 9px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.fxProgTab:hover {
+  border-color: var(--line-2);
+}
+
+.fxProgTabActive {
+  background: rgba(93, 211, 158, 0.14);
+  border-color: var(--accent);
+  color: var(--accent-2);
+}
+
+.fxProgDetail {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.fxProgDetailHead {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.fxProgDetailTitle {
+  font-size: 24px;
+  margin: 4px 0 8px;
+}
+
+.fxProgDetailIntro {
+  color: var(--text-1);
+  margin: 0 auto;
+  max-width: 720px;
+}
+
+.fxProgDetailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.fxProgPanel {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+}
+
+.fxProgPanelTitle {
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin: 0 0 12px;
+}
+
+.fxProgTierList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fxProgTierList li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+  padding: 10px 12px;
+  background: var(--bg-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line-1);
+}
+
+.fxProgTierList li strong {
+  font-size: 14px;
+}
+
+.fxProgTierList li span {
+  color: var(--accent-2);
+  font-size: 13px;
+}
+
+.fxProgTierList li em {
+  grid-column: 1 / -1;
+  font-style: normal;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.fxProgRules {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fxProgRules li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: var(--text-1);
+}
+
+.fxProgRules li svg {
+  color: var(--warn);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.fxProgCta {
+  margin-top: auto;
+}
+
+.fxAddonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.fxAddonCard {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-md);
+  padding: 18px;
+}
+
+.fxAddonCard h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.fxAddonCard p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+/* How it works */
+.fxHowSteps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.fxHowStep {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  position: relative;
+}
+
+.fxHowStepIdx {
+  font-family: var(--font-mono);
+  color: var(--accent-2);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.fxHowStepIcon {
+  color: var(--accent);
+  margin: 8px 0 12px;
+}
+
+.fxHowStepTitle {
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+
+.fxHowStepBody {
+  color: var(--text-2);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Payouts */
+.fxPayoutCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.fxPayoutCard {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+}
+
+.fxPayoutCardIcon {
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.fxPayoutCardTitle {
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+
+.fxPayoutCardBody {
+  color: var(--text-2);
+  margin: 0;
+  font-size: 13px;
+}
+
+.fxPayoutPrinciples {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fxPayoutPrinciples li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-md);
+}
+
+.fxPayoutPrinciples li svg {
+  color: var(--accent);
+}
+
+/* Resource cards */
+.fxResourceCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.fxResourceCard {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.fxResourceCard svg {
+  color: var(--accent-2);
+}
+
+.fxResourceCard h3 {
+  margin: 4px 0 0;
+  font-size: 15px;
+}
+
+.fxResourceCard p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+  flex: 1;
+}
+
+/* -- Footer -------------------------------------------------------------- */
+
+.fxFooterGrid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 36px;
+  padding: 40px 24px;
+  max-width: 1240px;
+  margin: 60px auto 0;
+  border-top: 1px solid var(--line-1);
+}
+
+@media (max-width: 760px) {
+  .fxFooterGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fxFooterTight {
+  margin-top: 24px;
+  padding-top: 24px;
+}
+
+.fxFooterBrand {
+  font-size: 16px;
+}
+
+.fxFooterMuted {
+  color: var(--text-2);
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.fxFooterCols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.fxFooterColsSingle {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 600px) {
+  .fxFooterCols {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fxFooterHdr {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin: 0 0 8px;
+}
+
+.fxFooterLink {
+  display: block;
+  color: var(--text-1);
+  text-decoration: none;
+  font-size: 13px;
+  margin-bottom: 6px;
+  text-align: left;
+}
+
+.fxFooterLink:hover {
+  color: var(--accent-2);
+}
+
+.fxFooterBtnAsLink {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* -- Legal page shell ---------------------------------------------------- */
+
+.fxLegalPage {
+  max-width: 820px;
+  margin: 24px auto;
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 36px 40px;
+}
+
+.fxLegalTitle {
+  font-size: 30px;
+  margin: 6px 0 4px;
+}
+
+.fxLegalUpdated {
+  color: var(--text-3);
+  font-size: 12px;
+  margin: 0 0 22px;
+}
+
+.fxLegalContent section {
+  margin-bottom: 22px;
+}
+
+.fxLegalContent h2 {
+  font-size: 16px;
+  margin: 0 0 8px;
+  color: var(--accent-2);
+}
+
+.fxLegalContent p,
+.fxLegalContent li {
+  color: var(--text-1);
+  font-size: 13.5px;
+}
+
+.fxLegalContent code {
+  background: var(--bg-3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12.5px;
+}
+
+/* -- Auth surfaces (login, terminal, ops) -------------------------------- */
+
+.fxAuthSection {
+  padding: 24px 0 64px;
+}
+
+.fxAuthGrid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 36px;
+  align-items: center;
+}
+
+@media (max-width: 880px) {
+  .fxAuthGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fxAuthBrand {
+  max-width: 540px;
+}
+
+.fxAuthBrandTitle {
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 700;
+  margin: 6px 0 14px;
+  line-height: 1.05;
+}
+
+.fxAuthBrandLead {
+  color: var(--text-1);
+  font-size: 15px;
+  margin: 0 0 18px;
+}
+
+.fxAuthBrandList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-1);
+}
+
+.fxAuthBrandList li {
+  position: relative;
+  padding-left: 22px;
+}
+
+.fxAuthBrandList li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  background: rgba(93, 211, 158, 0.18);
+  border: 1px solid var(--accent);
+}
+
+.fxAuthBackLink {
+  margin-top: 8px;
+}
+
+.fxAuthCardWrap {
+  display: flex;
+  justify-content: center;
+}
+
+.fxAuthWide {
+  width: 100%;
+}
+
+.fxAuthCard {
+  width: 100%;
+  max-width: 460px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-xl);
+  padding: 28px 28px 24px;
+  box-shadow: var(--shadow-md);
+}
+
+.fxAuthLead {
+  color: var(--text-2);
+  margin: 0 0 18px;
+  font-size: 13px;
+}
+
+.fxAuthTabs {
+  display: inline-flex;
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+
+.fxAuthTab {
+  background: transparent;
+  border: 0;
+  color: var(--text-2);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.fxAuthTabActive {
+  background: var(--accent);
+  color: #08110c;
+  font-weight: 600;
+}
+
+.fxClientForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fxField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fxFieldLabel {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  text-transform: uppercase;
+}
+
+.fxInputShell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-md);
+  padding-left: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.fxInputShell:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(93, 211, 158, 0.15);
+}
+
+.fxInputIcon {
+  color: var(--text-3);
+}
+
+.fxAuthInput {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--text-0);
+  padding: 11px 14px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.fxAuthInput::placeholder {
+  color: var(--text-3);
+}
+
+textarea.fxAuthInput {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.fxAuthRowBetween {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-2);
+  margin: 4px 0;
+}
+
+.fxCheckboxRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.fxCheckboxBlock {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: var(--text-1);
+  margin: 4px 0;
+}
+
+.fxAuthSubmit {
+  width: 100%;
+  justify-content: center;
+  margin-top: 6px;
+}
+
+.fxAuthError {
+  background: rgba(239, 91, 91, 0.12);
+  border: 1px solid rgba(239, 91, 91, 0.4);
+  color: #ffb1b1;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+.fxAuthFootMuted {
+  color: var(--text-3);
+  font-size: 12px;
+  margin: 12px 0 0;
+}
+
+.fxAuthInlineIcon {
+  color: var(--text-3);
+  vertical-align: -2px;
+}
+
+.fxKbd {
+  background: var(--bg-3);
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  color: var(--accent-2);
+}
+
+.fxAuthDemoCreds {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--bg-3);
+  border: 1px dashed var(--line-2);
+  border-radius: var(--radius-md);
+}
+
+.fxAuthDemoCredsTitle {
+  margin: 0 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+
+.fxAuthDemoCredsList {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-1);
+  font-size: 12.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fxAuthBackGhost {
+  margin-top: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+.fxOpsAuthSection {
+  padding-top: 36px;
+}
+
+.fxAdminLoginCard,
+.fxMgrLoginCard {
+  max-width: 540px;
+}
+
+.fxOpsAdminForm {
+  margin-top: 18px;
+}
+
+.fxOpsLoginHead {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+.fxOpsLoginIcon,
+.fxMgrLoginIcon {
+  color: var(--accent-2);
+  margin-top: 4px;
+}
+
+.fxOpsLoginFootMuted {
+  margin: 12px 0 0;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.fxOpsInlineLink {
+  text-decoration: underline;
+}
+
+.fxOpsClientBlockRoot {
+  min-height: 100vh;
+}
+
+.fxOpsClientBlockNav,
+.fxOpsNavMuted {
+  color: var(--text-2);
+  padding: 8px 14px;
+}
+
+.fxOpsClientBlockMain {
+  text-align: center;
+  padding-top: 60px;
+}
+
+.fxOpsClientBlockTitle {
+  font-size: 22px;
+  margin: 12px 0;
+}
+
+.fxOpsClientBlockActions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.fxOpsRedirectWait {
+  text-align: center;
+  padding-top: 80px;
+}
+
+.fxAdminLogoTap {
+  cursor: pointer;
+}
+
+.fxAdminNavBtn {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.fxOpsLogoutBtn {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.fxAdminEnvPill {
+  background: rgba(99, 178, 255, 0.12);
+  color: #b3d8ff;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(99, 178, 255, 0.3);
+}
+
+.fxAdminSpin {
+  animation: fxSpin 1s linear infinite;
+}
+
+@keyframes fxSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* -- Admin / portal panels (shared) ------------------------------------- */
+
+.fxAdminRoot,
+.fxPortalRoot,
+.fxMgrRoot {
+  background:
+    radial-gradient(800px 500px at 100% 0%, rgba(93, 211, 158, 0.08), transparent 60%),
+    var(--bg-0);
+  min-height: 100vh;
+}
+
+.fxAdminSite,
+.fxPortalSite,
+.fxMgrSite {
+  padding-bottom: 80px;
+}
+
+.fxAdminHero,
+.fxMgrHero {
+  padding: 24px 0 8px;
+}
+
+.fxAdminHeroTitle {
+  font-size: clamp(28px, 4vw, 40px);
+  margin: 4px 0 8px;
+}
+
+.fxAdminHeroLead {
+  color: var(--text-1);
+  margin: 0 0 16px;
+  max-width: 760px;
+}
+
+.fxAdminSection,
+.fxPortalSection {
+  padding: 24px 0;
+}
+
+.fxAdminSectionMuted {
+  background: linear-gradient(180deg, var(--bg-1), transparent);
+  margin: 0 -24px;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.fxAdminKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.fxAdminKpiCard {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+}
+
+.fxAdminKpiIcon {
+  color: var(--accent-2);
+  margin-bottom: 10px;
+}
+
+.fxAdminKpiLabel {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+
+.fxAdminKpiValue {
+  font-size: 22px;
+  margin: 4px 0;
+  color: var(--text-0);
+}
+
+.fxAdminKpiHint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.fxAdminTwoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 880px) {
+  .fxAdminTwoCol {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fxAdminThreeCol {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .fxAdminThreeCol {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .fxAdminThreeCol {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fxAdminPanel {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.fxAdminPanelTall {
+  min-height: 380px;
+}
+
+.fxAdminPanelWide {
+  grid-column: 1 / -1;
+}
+
+.fxAdminPanelHead {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+  align-items: flex-start;
+}
+
+.fxAdminPanelHead svg {
+  color: var(--accent-2);
+  margin-top: 4px;
+}
+
+.fxAdminPanelHead h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.fxAdminPanelSub {
+  margin: 2px 0 0;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.fxAdminScroll {
+  flex: 1;
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+
+.fxAdminScroll::-webkit-scrollbar { width: 6px; }
+.fxAdminScroll::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }
+
+.fxAdminListRow,
+.fxAdminMiniCard {
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px 12px;
+}
+
+.fxAdminListRow {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.fxAdminListRowSel {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(93, 211, 158, 0.1);
+}
+
+.fxAdminListTitle {
+  margin: 0;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+.fxAdminListMeta {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.fxAdminListBody {
+  margin: 4px 0;
+  color: var(--text-1);
+  font-size: 13px;
+}
+
+.fxAdminEmpty {
+  color: var(--text-3);
+  text-align: center;
+  margin: 12px 0;
+  font-size: 13px;
+}
+
+.fxAdminMiniHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fxAdminAmt {
+  font-size: 16px;
+}
+
+.fxAdminStatusDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+
+.fxAdminStatusDot--ok { background: var(--accent); }
+.fxAdminStatusDot--warn { background: var(--warn); }
+.fxAdminStatusDot--neutral { background: var(--text-3); }
+
+.fxAdminBadge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fxAdminBadgeNeutral {
+  background: rgba(99, 178, 255, 0.12);
+  color: #b3d8ff;
+}
+
+.fxAdminRowBtns {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.fxAdminChipBtn,
+.fxAdminOkBtn,
+.fxAdminDangerBtn,
+.fxAdminDangerGhost,
+.fxAdminNeutralBtn,
+.fxAdminNeutralMini {
+  border: 1px solid var(--line-2);
+  background: var(--bg-3);
+  color: var(--text-0);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.fxAdminChipBtn:hover,
+.fxAdminNeutralBtn:hover {
+  border-color: var(--accent);
+}
+
+.fxAdminChipBtnActive {
+  background: var(--accent);
+  color: #08110c;
+  border-color: var(--accent);
+}
+
+.fxAdminOkBtn {
+  background: rgba(93, 211, 158, 0.18);
+  color: var(--accent-2);
+  border-color: rgba(93, 211, 158, 0.4);
+}
+
+.fxAdminDangerBtn {
+  background: rgba(239, 91, 91, 0.18);
+  color: #ffb1b1;
+  border-color: rgba(239, 91, 91, 0.4);
+}
+
+.fxAdminDangerGhost {
+  background: transparent;
+  color: #ffb1b1;
+  border-color: rgba(239, 91, 91, 0.4);
+}
+
+.fxAdminNeutralMini {
+  font-size: 11.5px;
+  padding: 4px 10px;
+}
+
+.fxAdminDl {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.fxAdminDl div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-1);
+}
+
+.fxAdminDl dt {
+  color: var(--text-3);
+}
+
+.fxAdminActionGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.fxAdminStretch {
+  grid-column: 1 / -1;
+  justify-content: center;
+}
+
+.fxAdminAudit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.fxAdminAuditRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px dashed var(--line-1);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.fxAdminAuditIcon {
+  color: var(--text-3);
+}
+
+.fxAdminAuditAction {
+  color: var(--text-0);
+}
+
+.fxAdminAuditActor {
+  color: var(--accent-2);
+}
+
+.fxAdminAuditTime {
+  color: var(--text-3);
+}
+
+/* -- Manager portal ------------------------------------------------------ */
+
+.fxMgrSection {
+  padding: 16px 0;
+}
+
+.fxMgrMeta {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px 24px;
+  margin: 12px 0 0;
+}
+
+@media (max-width: 700px) {
+  .fxMgrMeta {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fxMgrMeta dt {
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.fxMgrCodeCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fxMgrShrinkUrl {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-1);
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  padding: 6px 8px;
+  border-radius: 6px;
+  word-break: break-all;
+  max-width: 320px;
+}
+
+.fxMgrCopyBtn {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.fxMgrGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.fxMgrKpi {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+}
+
+.fxMgrKpiIcon {
+  color: var(--accent-2);
+  margin-bottom: 6px;
+}
+
+.fxMgrKpiGold {
+  background:
+    linear-gradient(135deg, rgba(245, 176, 65, 0.1), rgba(245, 176, 65, 0)),
+    var(--bg-2);
+  border-color: rgba(245, 176, 65, 0.3);
+}
+
+.fxMgrDownline {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-1);
+  font-size: 13px;
+}
+
+.fxMgrTableWrap {
+  overflow-x: auto;
+}
+
+.fxMgrTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.fxMgrTable th,
+.fxMgrTable td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-1);
+  font-size: 13px;
+  text-align: left;
+}
+
+.fxMgrTable th {
+  color: var(--text-3);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fxMgrEmail {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.fxMgrLedger {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fxMgrLedgerRow {
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+}
+
+.fxMgrLedgerAmt {
+  text-align: right;
+  color: var(--accent);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.fxMgrLedgerAmt time {
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.fxMgrAcct {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.fxMgrSkeleton,
+.fxPortalSkeletonLine {
+  display: block;
+}
+
+.fxPortalSkeletonLine {
+  background: linear-gradient(90deg, var(--bg-3) 0%, var(--bg-4) 50%, var(--bg-3) 100%);
+  background-size: 200% 100%;
+  animation: fxShimmer 1.6s linear infinite;
+  height: 14px;
+  border-radius: 6px;
+  margin: 4px 0;
+}
+
+.fxPortalSkeletonLine.lg { height: 20px; max-width: 60%; }
+.fxPortalSkeletonLine.sm { height: 10px; max-width: 40%; }
+
+.fxPortalSkeletonIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--bg-3);
+  display: block;
+  margin-bottom: 8px;
+}
+
+@keyframes fxShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.fxMgrBanner {
+  margin-bottom: 12px;
+}
+
+.fxMgrHint {
+  color: var(--text-3);
+  font-size: 12px;
+  margin: 0;
+}
+
+.fxMgrDemoCreds {
+  margin-top: 14px;
+}
+
+.fxOpsClientBlockTitle + .fxPortalMuted {
+  color: var(--text-2);
+}
+
+.fxPortalMuted {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+/* -- Client portal ------------------------------------------------------- */
+
+.fxPortalLogout {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.fxPortalSpin {
+  animation: fxSpin 1s linear infinite;
+}
+
+.fxPortalBanner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.fxPortalBannerErr {
+  background: rgba(239, 91, 91, 0.14);
+  color: #ffc1c1;
+  border: 1px solid rgba(239, 91, 91, 0.4);
+}
+
+.fxPortalBannerOk {
+  background: rgba(93, 211, 158, 0.14);
+  color: var(--accent-2);
+  border: 1px solid rgba(93, 211, 158, 0.4);
+}
+
+.fxPortalBannerClose {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  margin-left: auto;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.fxPortalBannerClose:hover {
+  opacity: 1;
+}
+
+.fxPortalCredsBanner {
+  background:
+    linear-gradient(135deg, rgba(93, 211, 158, 0.12), rgba(99, 178, 255, 0.06)),
+    var(--bg-2);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.fxPortalCredsHeader {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.fxPortalCredsHeader > svg {
+  color: var(--accent);
+}
+
+.fxPortalCredsTitle {
+  font-size: 16px;
+  margin: 0;
+}
+
+.fxPortalCredsSubtitle {
+  margin: 2px 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.fxPortalCredsBody {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .fxPortalCredsBody {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fxPortalCredsBody dt {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.fxPortalCredsBody dd {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fxPortalCredsHint {
+  margin: 12px 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.fxPortalTabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin: 8px 0 24px;
+  border-bottom: 1px solid var(--line-1);
+  padding-bottom: 6px;
+}
+
+.fxPortalTab {
+  background: transparent;
+  border: 0;
+  color: var(--text-2);
+  padding: 9px 14px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  border: 1px solid transparent;
+}
+
+.fxPortalTab:hover {
+  color: var(--text-0);
+  background: var(--bg-2);
+}
+
+.fxPortalTabActive {
+  color: var(--accent-2);
+  background: var(--bg-3);
+  border-color: var(--line-2);
+}
+
+.fxPortalKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.fxPortalStatCard {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fxPortalStatCard svg {
+  color: var(--accent-2);
+}
+
+.fxPortalStatLabel {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+
+.fxPortalStatValue {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.fxPortalStatPos { color: var(--accent); }
+.fxPortalStatNeg { color: var(--danger); }
+
+.fxPortalStatHint {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.fxPortalEmptyHero {
+  background: var(--bg-2);
+  border: 1px dashed var(--line-2);
+  border-radius: var(--radius-lg);
+  padding: 40px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.fxPortalEmptyHero svg {
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.fxPortalEmptyHero h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.fxPortalEmptyHero p {
+  color: var(--text-2);
+  margin: 0 0 14px;
+  max-width: 480px;
+}
+
+.fxPortalPkgGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.fxPortalPkgCard {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+}
+
+.fxPortalPkgHead {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: flex-start;
+}
+
+.fxPortalPkgTitle {
+  margin: 4px 0;
+  font-size: 17px;
+}
+
+.fxPortalPhasePill {
+  background: var(--bg-3);
+  border: 1px solid var(--line-2);
+  color: var(--text-1);
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.fxPortalPhasePill--funded {
+  background: rgba(93, 211, 158, 0.16);
+  color: var(--accent-2);
+  border-color: rgba(93, 211, 158, 0.4);
+}
+
+.fxPortalPhasePill--phase_1,
+.fxPortalPhasePill--phase_2,
+.fxPortalPhasePill--phase_3 {
+  background: rgba(99, 178, 255, 0.12);
+  color: #b3d8ff;
+  border-color: rgba(99, 178, 255, 0.4);
+}
+
+.fxPortalPkgKpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 16px;
+  margin: 0 0 8px;
+}
+
+@media (max-width: 700px) {
+  .fxPortalPkgKpis {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.fxPortalPkgKpis div {
+  display: flex;
+  flex-direction: column;
+}
+
+.fxPortalPkgKpis dt {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+
+.fxPortalPkgKpis dd {
+  margin: 2px 0 0;
+  color: var(--text-0);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.fxPortalPkgKpisExtra {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line-1);
+}
+
+.fxPortalPkgExpand {
+  margin: 6px 0;
+}
+
+.fxPortalPkgActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.fxPortalCode {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: var(--bg-3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--text-1);
+}
+
+.fxPortalCodeLg {
+  font-size: 16px;
+  padding: 6px 10px;
+}
+
+.fxPortalTermList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 16px;
+}
+
+.fxPortalTermCard {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+}
+
+.fxPortalTermHead {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.fxPortalTermTitle {
+  margin: 4px 0 0;
+  font-size: 16px;
+}
+
+.fxPortalTermCreds {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 600px) {
+  .fxPortalTermCreds {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fxPortalCredRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.fxIconBtn {
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  color: var(--text-1);
+  padding: 6px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.fxIconBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent-2);
+}
+
+.fxPortalHintWarn {
+  color: var(--warn);
+  font-size: 12px;
+  margin: 6px 0 0;
+}
+
+.fxPortalTermResetCard {
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.fxPortalTermResetTitle {
+  margin: 0 0 10px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-1);
+}
+
+.fxPortalTermResetTabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.fxPortalResetTab {
+  background: transparent;
+  border: 1px solid var(--line-2);
+  color: var(--text-1);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.fxPortalResetTabActive {
+  background: var(--accent);
+  color: #08110c;
+  border-color: var(--accent);
+}
+
+.fxPortalCustomPwRow {
+  display: flex;
+  gap: 8px;
+  margin: 6px 0 8px;
+}
+
+.fxPortalCustomPwRow input {
+  flex: 1;
+}
+
+.fxPortalApplyBtn {
+  margin-top: 6px;
+}
+
+.fxPortalSmall {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.fxPortalCatalogGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.fxPortalCatalogCard {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.fxPortalCatalogTitle {
+  margin: 6px 0 6px;
+  font-size: 16px;
+}
+
+.fxPortalCatalogTagline {
+  color: var(--text-2);
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+
+.fxPortalCatalogSpecs {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fxPortalCatalogSpecs li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-1);
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--line-1);
+}
+
+.fxPortalCatalogSpecs li:last-child {
+  border-bottom: 0;
+}
+
+.fxPortalCatalogSpecs li span {
+  color: var(--text-3);
+}
+
+.fxPortalCatalogFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+.fxPortalCatalogPrice {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--accent-2);
+}
+
+/* ─── catalog grouped-by-family layout ───────────────────────────── */
+
+.fxPortalCatalogStack {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.fxPortalCatalogGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fxPortalCatalogGroupHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--line-1);
+  padding-bottom: 10px;
+}
+
+.fxPortalCatalogGroupBlurb {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.fxPortalCatalogGroupCount {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-1);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.fxPortalCatalogTier {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+
+.fxPortalChip {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-1);
+  border-radius: 999px;
+  padding: 4px 10px;
+  align-self: center;
+}
+
+/* ─── desktop-app download card on Overview tab ──────────────────── */
+
+.fxPortalDownloadCard {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 22px;
+  padding: 22px 24px;
+  margin: 18px 0 6px;
+  background:
+    radial-gradient(circle at top right, rgba(99, 178, 255, 0.18), transparent 55%),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.12) 0%, rgba(13, 24, 40, 0.7) 60%);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+}
+
+.fxPortalDownloadIcon {
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1e40af, #2563eb 70%, #38bdf8);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.35);
+}
+
+.fxPortalDownloadBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fxPortalDownloadTitle {
+  margin: 2px 0 4px;
+  font-size: 19px;
+  letter-spacing: 0.01em;
+}
+
+.fxPortalDownloadLead {
+  margin: 0 0 10px;
+  color: var(--text-2);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.fxPortalDownloadMeta {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px 14px;
+}
+
+.fxPortalDownloadMeta li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 12px;
+}
+
+.fxPortalDownloadMeta li span {
+  color: var(--text-3);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.fxPortalDownloadActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.fxPortalDownloadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.fxPortalDownloadBtn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.fxPortalDownloadHint {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-3);
+  text-align: right;
+  max-width: 240px;
+}
+
+@media (max-width: 880px) {
+  .fxPortalDownloadCard {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "icon body"
+      "actions actions";
+    row-gap: 14px;
+  }
+  .fxPortalDownloadIcon { grid-area: icon; }
+  .fxPortalDownloadBody { grid-area: body; }
+  .fxPortalDownloadActions {
+    grid-area: actions;
+    align-items: stretch;
+    min-width: 0;
+  }
+  .fxPortalDownloadHint { text-align: left; max-width: none; }
+}
+
+.fxPortalProfileGrid,
+.fxPortalSupportGrid,
+.fxPortalPayoutGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 880px) {
+  .fxPortalProfileGrid,
+  .fxPortalSupportGrid,
+  .fxPortalPayoutGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fxPortalProfileCard,
+.fxPortalPayoutCard {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fxPortalCardTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--text-0);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fxPortalCardTitle svg {
+  color: var(--accent-2);
+}
+
+.fxPortalRow2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.fxPortalRow3 {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 700px) {
+  .fxPortalRow2,
+  .fxPortalRow3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fxPortalTextarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.fxPortalPayoutList,
+.fxPortalTicketList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fxPortalPayoutList li,
+.fxPortalTicketList li {
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.fxPortalTicketList li p {
+  margin: 6px 0 4px;
+  color: var(--text-1);
+}
+
+/* -- Checkout modal ------------------------------------------------------ */
+
+.fxCheckoutBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 5, 9, 0.7);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  padding: 20px;
+  animation: fxFadeIn 0.18s ease-out;
+}
+
+@keyframes fxFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fxCheckoutShell {
+  width: 100%;
+  max-width: 880px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: fxScaleIn 0.18s ease-out;
+}
+
+@keyframes fxScaleIn {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.fxCheckoutHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 22px 26px 14px;
+  border-bottom: 1px solid var(--line-1);
+}
+
+.fxCheckoutTitle {
+  margin: 4px 0 0;
+  font-size: 22px;
+}
+
+.fxCheckoutClose {
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  color: var(--text-1);
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.fxCheckoutClose:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.fxCheckoutGrid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 0;
+}
+
+@media (max-width: 760px) {
+  .fxCheckoutGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fxCheckoutCol {
+  padding: 20px 26px 24px;
+}
+
+.fxCheckoutColForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fxCheckoutColSummary {
+  background: var(--bg-1);
+  border-left: 1px solid var(--line-1);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (max-width: 760px) {
+  .fxCheckoutColSummary {
+    border-left: 0;
+    border-top: 1px solid var(--line-1);
+  }
+}
+
+.fxCheckoutSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.fxCheckoutSectionTitle svg {
+  color: var(--accent-2);
+}
+
+.fxCheckoutDemoNote {
+  background: rgba(99, 178, 255, 0.1);
+  border: 1px solid rgba(99, 178, 255, 0.3);
+  color: #c4ddff;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  margin: 0;
+}
+
+.fxCheckoutRow2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.fxCheckoutBrand {
+  font-size: 11px;
+  color: var(--accent-2);
+  padding-right: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fxCheckoutTerms {
+  margin-top: 4px;
+}
+
+.fxCheckoutSummaryCard {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fxCheckoutPkgSlug {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--accent-2);
+  text-transform: uppercase;
+}
+
+.fxCheckoutPkgName {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.fxCheckoutPkgTag {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.fxCheckoutSpecs,
+.fxCheckoutTotals {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.fxCheckoutSpecs li,
+.fxCheckoutTotals li {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--line-1);
+  color: var(--text-1);
+}
+
+.fxCheckoutSpecs li:last-child,
+.fxCheckoutTotals li:last-child {
+  border-bottom: 0;
+}
+
+.fxCheckoutSpecs li span,
+.fxCheckoutTotals li span {
+  color: var(--text-3);
+}
+
+.fxCheckoutTotalsRowFinal {
+  font-size: 15px;
+  border-top: 1px solid var(--line-2) !important;
+  padding-top: 10px !important;
+  margin-top: 6px;
+}
+
+.fxCheckoutTotalsRowFinal strong {
+  color: var(--accent-2);
+  font-size: 18px;
+}
+
+.fxCheckoutPay {
+  width: 100%;
+  justify-content: center;
+}
+
+.fxCheckoutFootMuted {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 11.5px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.fxCheckoutSuccess {
+  text-align: center;
+  padding: 30px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.fxCheckoutSuccess svg {
+  color: var(--accent);
+}
+
+.fxCheckoutSuccess h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.fxCheckoutSuccess p {
+  margin: 0;
+  color: var(--text-2);
+}
+
+/* -- Trading terminal (legacy MetaTrader-style) -------------------------- */
+
+.fxTerminalRoot {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg-0);
+  color: var(--text-0);
+  overflow: hidden;
+  font-size: 12.5px;
+}
+
+.fxTerminalTopBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, #14181f, #0d1117);
+  border-bottom: 1px solid var(--line-1);
+}
+
+.fxTermLogoBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 0;
+  color: var(--text-0);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.fxTermLogoBtn:hover { background: var(--bg-3); }
+
+.fxTermLogoMark {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+}
+
+.fxTermLogoTxt {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.fxTermChromeDivider {
+  width: 1px;
+  background: var(--line-1);
+  align-self: stretch;
+  margin: 0 4px;
+}
+
+.fxTermMenuBtn,
+.menuBtn {
+  background: transparent;
+  border: 0;
+  color: var(--text-1);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12.5px;
+}
+
+.fxTermMenuBtn:hover,
+.menuBtn:hover {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+
+.menuBtnActive {
+  background: var(--bg-4) !important;
+  color: var(--text-0);
+}
+
+.menuWrap { position: relative; }
+
+.menuDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  min-width: 240px;
+  padding: 4px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.menuItem {
+  background: transparent;
+  border: 0;
+  text-align: left;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: var(--text-0);
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+}
+
+.menuItem:hover { background: var(--bg-3); }
+.menuItem.muted { color: var(--text-3); }
+.menuItem span { color: var(--text-3); font-size: 11px; }
+
+.fxTermTopSpacer { flex: 1; }
+
+.fxTermGhostBtn {
+  background: transparent;
+  border: 0;
+  color: var(--text-2);
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.fxTermGhostBtn:hover { color: var(--text-0); }
+
+.fxTermQuickNav {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.fxTermPill {
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  color: var(--text-1);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+}
+
+.fxTermPill:hover {
+  border-color: var(--accent);
+  color: var(--accent-2);
+}
+
+.fxTermPillMuted { color: var(--text-2); }
+
+.fxTermPillOps {
+  background: rgba(99, 178, 255, 0.12);
+  color: #b3d8ff;
+  border-color: rgba(99, 178, 255, 0.3);
+}
+
+.fxTermPillPartner {
+  background: rgba(245, 176, 65, 0.12);
+  color: #ffd693;
+  border-color: rgba(245, 176, 65, 0.3);
+}
+
+.fxTermPillGhost {
+  background: transparent;
+  color: var(--danger);
+}
+
+.fxTermAcctTag {
+  background: rgba(93, 211, 158, 0.1);
+  border: 1px solid rgba(93, 211, 158, 0.3);
+  color: var(--accent-2);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.fxTermAcctLabel {
+  color: var(--text-3);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.bodyArea {
+  flex: 1;
+  display: grid;
+  min-height: 0;
+}
+
+.workspaceRow {
+  display: grid;
+  min-height: 0;
+}
+
+.leftPane {
+  background: var(--bg-1);
+  border-right: 1px solid var(--line-1);
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chartPane {
+  background: var(--bg-0);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartMainPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line-1);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+}
+
+.panel h3 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--accent-2);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.panel p { margin: 4px 0; }
+
+.panel label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11.5px;
+  color: var(--text-2);
+  margin-bottom: 6px;
+}
+
+.panel input,
+.panel select {
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  color: var(--text-0);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.panel input:focus,
+.panel select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.panelScroll {
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.resizablePanel {}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.actions .buy,
+.actions .sell {
+  border: 0;
+  border-radius: 4px;
+  padding: 6px;
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.buy { background: var(--buy); }
+.sell { background: var(--sell); }
+.buy:hover { background: #34c08c; }
+.sell:hover { background: #ff7173; }
+
+.symbol {
+  display: flex;
+  justify-content: space-between;
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  color: var(--text-0);
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+.symbol:hover { border-color: var(--accent); }
+.symbol.active {
+  background: rgba(93, 211, 158, 0.1);
+  border-color: var(--accent);
+  color: var(--accent-2);
+}
+
+.inlineActions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 4px 0;
+  align-items: center;
+}
+
+.miniBtn,
+.tfBtn {
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  color: var(--text-1);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.miniBtn:hover,
+.tfBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent-2);
+}
+
+.miniBtn.activeMode,
+.tfBtn.active {
+  background: var(--accent);
+  color: #08110c;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.miniBtn.buy { background: var(--buy); color: white; border-color: var(--buy); }
+.miniBtn.sell { background: var(--sell); color: white; border-color: var(--sell); }
+
+.iconBtn { padding: 3px 6px; }
+
+.chartTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.fxQuickTradeBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fxLotPicker {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  border-radius: 4px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.fxLotStep {
+  background: transparent;
+  border: 0;
+  color: var(--text-1);
+  width: 22px;
+  height: 26px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.fxLotStep:hover {
+  background: var(--bg-4);
+  color: var(--accent-2);
+}
+
+.fxLotInput {
+  width: 60px;
+  border: 0;
+  background: transparent;
+  color: var(--text-0);
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: 4px 0;
+}
+
+.fxLotInput:focus { outline: none; }
+
+.fxLotUnit {
+  color: var(--text-3);
+  font-size: 11px;
+  padding-right: 8px;
+}
+
+.timeframeRow {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+  border-top: 1px dashed var(--line-1);
+  border-bottom: 1px dashed var(--line-1);
+  margin: 4px 0;
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--text-3);
+  margin: 4px 0;
+  font-family: var(--font-mono);
+}
+
+.splitter {
+  background: var(--line-1);
+}
+
+.splitter.vertical {
+  cursor: col-resize;
+}
+
+.splitter.horizontal {
+  cursor: row-resize;
+}
+
+.splitter:hover {
+  background: var(--accent);
+}
+
+.terminalArea {
+  background: var(--bg-1);
+  border-top: 1px solid var(--line-1);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.terminalTabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line-1);
+}
+
+.tabBtn {
+  background: transparent;
+  border: 0;
+  color: var(--text-2);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.tabBtn.active {
+  background: var(--bg-3);
+  color: var(--accent-2);
+}
+
+.tradeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 1100px) {
+  .tradeGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .tradeGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.positionRow {
+  background: var(--bg-3);
+  border: 1px solid var(--line-1);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.positionRow p { margin: 2px 0; }
+
+.error {
+  color: var(--danger);
+  font-size: 11.5px;
+  margin: 4px 0 0;
+}
+
+/* Chart container — for Lightweight-Charts host */
+.fxChartHost {
+  flex: 1;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
