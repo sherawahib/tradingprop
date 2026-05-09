@@ -12,7 +12,83 @@ import type {
   ViolationRecord
 } from "@paper-trader/shared";
 
-export const symbols: ForexSymbol[] = ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "XAGUSD", "USOILUSD"];
+import { TRADE_SYMBOLS } from "@paper-trader/shared";
+
+export const symbols: ForexSymbol[] = [...TRADE_SYMBOLS];
+
+/**
+ * Sensible bootstrap prices keyed by symbol family, used until the MT5 bridge
+ * delivers the first real tick. Values are intentionally rough — they only
+ * exist so the UI doesn't show NaN before the broker connects.
+ */
+const SEED_PRICE: Record<string, number> = {
+  // FX
+  EURUSD: 1.08, GBPUSD: 1.27, USDJPY: 156, AUDUSD: 0.65, USDCAD: 1.37, USDCHF: 0.9, NZDUSD: 0.6,
+  EURGBP: 0.85, EURJPY: 168, EURAUD: 1.66, EURCHF: 0.97, EURCAD: 1.48, EURNZD: 1.8,
+  GBPJPY: 198, GBPAUD: 1.95, GBPCHF: 1.14, GBPCAD: 1.74, GBPNZD: 2.12,
+  AUDJPY: 102, AUDCAD: 0.89, AUDCHF: 0.59, AUDNZD: 1.09, NZDJPY: 94, CADJPY: 114, CHFJPY: 174,
+  // Metals
+  XAUUSD: 4700, XAGUSD: 80, XPTUSD: 1000, XPDUSD: 1000,
+  // Energy
+  USOILUSD: 80, XNGUSD: 3,
+  // Indices
+  US30: 43000, US500: 5800, DE30: 19000, UK100: 8200, JP225: 39000, AUS200: 8000,
+  // Crypto
+  BTCUSD: 80000, ETHUSD: 2300, SOLUSD: 90, BNBUSD: 650, XRPUSD: 1.4, ADAUSD: 0.6,
+  DOGEUSD: 0.1, AVAXUSD: 9.9, LTCUSD: 90, LINKUSD: 14, DOTUSD: 6, MATICUSD: 0.5
+};
+
+function createDefaultPrices(now: number): Record<ForexSymbol, PriceTick> {
+  const out: Record<ForexSymbol, PriceTick> = {} as Record<ForexSymbol, PriceTick>;
+  for (const s of symbols) {
+    const mid = SEED_PRICE[s] ?? 1;
+    const halfSpread = symbolHalfSpread(s, mid);
+    out[s] = {
+      symbol: s,
+      bid: round(mid - halfSpread, decimalsFor(s)),
+      ask: round(mid + halfSpread, decimalsFor(s)),
+      timestamp: now
+    };
+  }
+  return out;
+}
+
+function symbolHalfSpread(symbol: string, mid: number): number {
+  const s = symbol.toUpperCase();
+  if (s.endsWith("JPY")) return 0.005;
+  if (s === "XAUUSD" || s === "XPTUSD" || s === "XPDUSD") return 0.1;
+  if (s === "XAGUSD") return 0.0025;
+  if (s === "USOILUSD" || s === "XNGUSD") return 0.01;
+  if (s === "US30" || s === "US500" || s === "DE30" || s === "UK100" || s === "JP225" || s === "AUS200") {
+    return Math.max(0.5, mid * 0.0001);
+  }
+  if (s === "BTCUSD" || s === "ETHUSD" || s === "BNBUSD") return Math.max(0.5, mid * 0.0002);
+  if (s === "DOGEUSD") return 0.000005;
+  if (s === "XRPUSD" || s === "ADAUSD" || s === "MATICUSD" || s === "DOTUSD") return 0.00001;
+  return 0.00001;
+}
+
+function decimalsFor(symbol: string): number {
+  // Lazy-import-free copy of symbolDecimals to avoid circular imports during bootstrap.
+  const s = symbol.toUpperCase();
+  if (s === "DOGEUSD") return 6;
+  if (s === "XRPUSD" || s === "ADAUSD" || s === "MATICUSD" || s === "DOTUSD") return 5;
+  if (s === "USDJPY" || s.endsWith("JPY")) return 3;
+  if (s === "XAGUSD") return 3;
+  if (
+    s === "XAUUSD" || s === "USOILUSD" || s === "XPTUSD" || s === "XPDUSD" ||
+    s === "BTCUSD" || s === "ETHUSD" || s === "SOLUSD" || s === "BNBUSD" ||
+    s === "AVAXUSD" || s === "LTCUSD" || s === "LINKUSD" ||
+    s === "US30" || s === "US500" || s === "DE30" || s === "UK100" || s === "JP225" || s === "AUS200" ||
+    s === "XNGUSD"
+  ) return 2;
+  return 5;
+}
+
+function round(n: number, decimals: number): number {
+  const f = Math.pow(10, decimals);
+  return Math.round(n * f) / f;
+}
 
 export interface ClientAuthUser {
   id: string;
@@ -259,14 +335,7 @@ export function createDefaultState(): PlatformState {
     leverage: 100
   };
   return {
-    prices: {
-      EURUSD: { symbol: "EURUSD", bid: 1.082, ask: 1.0822, timestamp: now },
-      GBPUSD: { symbol: "GBPUSD", bid: 1.263, ask: 1.2632, timestamp: now },
-      USDJPY: { symbol: "USDJPY", bid: 154.21, ask: 154.23, timestamp: now },
-      XAUUSD: { symbol: "XAUUSD", bid: 4683.9, ask: 4684.1, timestamp: now },
-      XAGUSD: { symbol: "XAGUSD", bid: 27.48, ask: 27.5, timestamp: now },
-      USOILUSD: { symbol: "USOILUSD", bid: 78.32, ask: 78.35, timestamp: now }
-    },
+    prices: createDefaultPrices(now),
     orders: [],
     positions: [],
     account: { ...starterLedger },
@@ -548,7 +617,7 @@ export function createDefaultState(): PlatformState {
       }
     ],
     adminOperator: {
-      username: "AWSVISION",
+      username: "PROPPRIME_OPS",
       passwordHash: "",
       notificationEmail: "ops@propprime.local"
     },

@@ -1,4 +1,116 @@
-export type ForexSymbol = "EURUSD" | "GBPUSD" | "USDJPY" | "XAUUSD" | "XAGUSD" | "USOILUSD";
+/**
+ * Tradeable instrument symbols mirrored to the MT5 broker. Treated as plain
+ * uppercase strings everywhere so the platform can carry the broker's full
+ * tradable universe without compile-time bookkeeping for every single ticker.
+ */
+export type ForexSymbol = string;
+
+export * from "./marketSession";
+
+/** Sensible default fallback when the API hasn't replied yet. */
+export const DEFAULT_SYMBOL = "EURUSD";
+
+/**
+ * Curated catalog of instruments the platform exposes by default. The MT5
+ * bridge auto-discovers which of these the broker actually carries (with
+ * common suffix variants like `.m`, `.raw`, `.pro`) and silently drops any
+ * symbol the broker doesn't expose.
+ */
+export const TRADE_SYMBOLS: string[] = [
+  // FX majors
+  "EURUSD",
+  "GBPUSD",
+  "USDJPY",
+  "AUDUSD",
+  "USDCAD",
+  "USDCHF",
+  "NZDUSD",
+  // FX crosses
+  "EURGBP",
+  "EURJPY",
+  "EURAUD",
+  "EURCHF",
+  "EURCAD",
+  "EURNZD",
+  "GBPJPY",
+  "GBPAUD",
+  "GBPCHF",
+  "GBPCAD",
+  "GBPNZD",
+  "AUDJPY",
+  "AUDCAD",
+  "AUDCHF",
+  "AUDNZD",
+  "NZDJPY",
+  "CADJPY",
+  "CHFJPY",
+  // Metals
+  "XAUUSD",
+  "XAGUSD",
+  "XPTUSD",
+  "XPDUSD",
+  // Energy
+  "USOILUSD",
+  "XNGUSD",
+  // Indices
+  "US30",
+  "US500",
+  "DE30",
+  "UK100",
+  "JP225",
+  "AUS200",
+  // Crypto
+  "BTCUSD",
+  "ETHUSD",
+  "SOLUSD",
+  "BNBUSD",
+  "XRPUSD",
+  "ADAUSD",
+  "DOGEUSD",
+  "AVAXUSD",
+  "LTCUSD",
+  "LINKUSD",
+  "DOTUSD",
+  "MATICUSD"
+];
+
+/** Quote-currency-aware decimal precision used for display + rounding. */
+export function symbolDecimals(symbol: string): number {
+  const s = symbol.toUpperCase();
+  if (s === "DOGEUSD") return 6;
+  if (s === "XRPUSD" || s === "ADAUSD" || s === "MATICUSD" || s === "DOTUSD") return 5;
+  if (s === "USDJPY" || s.endsWith("JPY")) return 3;
+  if (s === "XAGUSD") return 3;
+  if (
+    s === "XAUUSD" ||
+    s === "USOILUSD" ||
+    s === "XPTUSD" ||
+    s === "XPDUSD" ||
+    s === "BTCUSD" ||
+    s === "ETHUSD" ||
+    s === "SOLUSD" ||
+    s === "BNBUSD" ||
+    s === "AVAXUSD" ||
+    s === "LTCUSD" ||
+    s === "LINKUSD" ||
+    s === "US30" ||
+    s === "US500" ||
+    s === "DE30" ||
+    s === "UK100" ||
+    s === "JP225" ||
+    s === "AUS200" ||
+    s === "XNGUSD"
+  ) {
+    return 2;
+  }
+  return 5;
+}
+
+/** Minimum quantity step (price-level "pip"). */
+export function symbolPipSize(symbol: string): number {
+  const decimals = symbolDecimals(symbol);
+  return Math.pow(10, -decimals);
+}
 
 export type OrderType = "MARKET" | "LIMIT" | "STOP";
 export type OrderSide = "BUY" | "SELL";
@@ -27,6 +139,12 @@ export interface Order {
   closedAt?: number;
   closePrice?: number;
   closeReason?: "MANUAL" | "STOP_LOSS" | "TAKE_PROFIT";
+  /** Realized USD P/L for the closing leg of a position (only set on
+   *  auto-generated closing orders). Positive = winning trade, negative = loss. */
+  realizedPnl?: number;
+  /** Symbol-side originally opened by the trader, useful to render the close
+   *  in the same direction as the position rather than as the reversed leg. */
+  closingFor?: OrderSide;
 }
 
 export interface Position {

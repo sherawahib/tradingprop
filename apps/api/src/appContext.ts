@@ -9,6 +9,7 @@ import { AuditService } from "./services/auditService";
 import { MailService } from "./services/mailService";
 import { ChallengeService } from "./services/challengeService";
 import { AuthService } from "./services/authService";
+import { Mt5BridgeService } from "./services/mt5BridgeService";
 import { MarketDataService } from "./services/marketDataService";
 import { PayoutService } from "./services/payoutService";
 import { TerminalAccountService } from "./services/terminalAccountService";
@@ -24,7 +25,8 @@ export class AppContext {
   readonly violationService = new ViolationService(this.store);
   readonly challengeService = new ChallengeService(this.store, this.violationService);
   readonly payoutService = new PayoutService(this.store, this.challengeService, this.violationService);
-  readonly marketDataService = new MarketDataService(this.store);
+  readonly mt5BridgeService = new Mt5BridgeService();
+  readonly marketDataService = new MarketDataService(this.store, this.mt5BridgeService);
   readonly tradingService = new TradingService(this.store, this.challengeService, this.auditService, this.violationService);
   readonly terminalAccountService = new TerminalAccountService(this.store);
   readonly authService = new AuthService(this.store, this.terminalAccountService);

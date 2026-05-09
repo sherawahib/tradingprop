@@ -17,7 +17,11 @@
     "allowImportingTsExtensions": false,
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": true,
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@paper-trader/shared": ["../../packages/shared/src"]
+    }
   },
   "include": ["src", "electron/preload-types.d.ts"]
 }

@@ -92,6 +92,56 @@ export const PROGRAM_SIGNUP_PRESETS: Record<string, ProgramSignupPreset> = {
     tagline: "Top-tier two-step. Maximum simulated capital."
   },
 
+  /** Same tier sizes as Classic Two Phase — alternate rule packs (template differs). */
+  TWO_PHASE_FXI_10K: {
+    templateId: "preset-fxify-two-phase",
+    simulatedBalanceUsd: 10000,
+    priceUsd: 109,
+    family: "TWO_PHASE",
+    packageTypeLabel: "Two Phase · FXIFY-style rails · $10k desk",
+    tagline: "4% daily loss · inactivity clock · permissive conduct heuristics."
+  },
+  TWO_PHASE_FXI_50K: {
+    templateId: "preset-fxify-two-phase",
+    simulatedBalanceUsd: 50000,
+    priceUsd: 379,
+    family: "TWO_PHASE",
+    packageTypeLabel: "Two Phase · FXIFY-style rails · $50k desk",
+    tagline: "Scaled FXIFY-style rails on a $50k simulated desk."
+  },
+  TWO_PHASE_FXI_100K: {
+    templateId: "preset-fxify-two-phase",
+    simulatedBalanceUsd: 100000,
+    priceUsd: 579,
+    family: "TWO_PHASE",
+    packageTypeLabel: "Two Phase · FXIFY-style rails · $100k desk",
+    tagline: "Scaled FXIFY-style rails on a $100k simulated desk."
+  },
+  TWO_PHASE_FTM_10K: {
+    templateId: "preset-ftmo-two-phase",
+    simulatedBalanceUsd: 10000,
+    priceUsd: 149,
+    family: "TWO_PHASE",
+    packageTypeLabel: "Two Phase · FTMO-style · $10k desk",
+    tagline: "News blackout windows · stricter Martingale / copy-mirror checks."
+  },
+  TWO_PHASE_FTM_50K: {
+    templateId: "preset-ftmo-two-phase",
+    simulatedBalanceUsd: 50000,
+    priceUsd: 449,
+    family: "TWO_PHASE",
+    packageTypeLabel: "Two Phase · FTMO-style · $50k desk",
+    tagline: "FTMO-inspired rails scaled to $50k simulated capital."
+  },
+  TWO_PHASE_FTM_100K: {
+    templateId: "preset-ftmo-two-phase",
+    simulatedBalanceUsd: 100000,
+    priceUsd: 699,
+    family: "TWO_PHASE",
+    packageTypeLabel: "Two Phase · FTMO-style · $100k desk",
+    tagline: "FTMO-inspired rails scaled to $100k simulated capital."
+  },
+
   // ── Three Phase ────────────────────────────────────────────────────────
   THREE_PHASE_25K: {
     templateId: "prog-three-cycle",

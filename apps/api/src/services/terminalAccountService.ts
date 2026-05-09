@@ -47,6 +47,19 @@ function generatePlaintextPassword(): string {
   return groups.join("-");
 }
 
+/**
+ * Cryptographically random 8-digit numeric login (10_000_000 - 99_999_999).
+ *
+ * Sequential logins (100001, 100002 ...) leak how many users you have, and
+ * make per-user accounts trivially enumerable / guessable, which is a real
+ * privacy + scraping risk. Random 8-digit logins live in a 90,000,000-wide
+ * keyspace so even with 100k accounts you're at ~0.1% density and the next
+ * login can't be derived from the previous one.
+ */
+function generateRandomNumericLogin(): string {
+  return crypto.randomInt(10_000_000, 100_000_000).toString();
+}
+
 export class TerminalAccountService {
   constructor(private readonly store: StateStore) {}
 
@@ -85,10 +98,19 @@ export class TerminalAccountService {
     this.store.update((s) => {
       let login = input.overrideLogin?.trim() ?? "";
       if (!login || s.terminalAccounts.some((t) => t.login === login)) {
-        let next = Math.max(s.nextTerminalLoginSeq, 100001);
-        while (s.terminalAccounts.some((t) => t.login === String(next))) next += 1;
-        login = String(next);
-        s.nextTerminalLoginSeq = next + 1;
+        let candidate = generateRandomNumericLogin();
+        let attempts = 0;
+        while (s.terminalAccounts.some((t) => t.login === candidate)) {
+          candidate = generateRandomNumericLogin();
+          attempts += 1;
+          if (attempts > 64) {
+            candidate = `${crypto.randomInt(100_000_000, 1_000_000_000)}`;
+            if (!s.terminalAccounts.some((t) => t.login === candidate)) break;
+            attempts = 0;
+          }
+        }
+        login = candidate;
+        s.nextTerminalLoginSeq = Math.max(s.nextTerminalLoginSeq, 100001) + 1;
       }
       const rec: TerminalAccountRecord = {
         id,

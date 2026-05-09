@@ -2,126 +2,184 @@ import type { ForexSymbol, PriceTick } from "@paper-trader/shared";
 import { symbols } from "../domain";
 import { StateStore } from "../db/stateStore";
 import { roundPrice } from "./utils";
+import type { Mt5BridgeService } from "./mt5BridgeService";
 
-function tvcTicker(symbol: ForexSymbol): string | null {
-  if (symbol === "XAUUSD") return "TVC:GOLD";
-  if (symbol === "XAGUSD") return "TVC:SILVER";
-  if (symbol === "USOILUSD") return "TVC:USOIL";
-  return null;
+/**
+ * MarketDataService: emits tick updates that are EXACT pass-throughs of the
+ * MT5 bridge feed — no jitter, no synthetic drift.
+ *
+ * Single source of truth: the MT5 bridge connected to the local Exness
+ * terminal. If a symbol isn't covered by the broker the price stays at its
+ * last known value and the snapshot reports it as stale / unconfigured.
+ */
+
+interface BoardSnapshot {
+  configured: boolean;
+  quoteCount: number;
+  quotes: Array<{
+    symbol: ForexSymbol;
+    bid: number;
+    ask: number;
+    mid: number;
+    updatedAt: number;
+    source: "mt5" | "cache";
+    stale: boolean;
+  }>;
+  source: "live" | "partial" | "unconfigured" | "error";
+  errorMessage?: string;
+  mt5Connected: boolean;
+  mt5StatusReason?: string;
+  minRequestIntervalMs: number;
+  historyCacheTtlMs: number;
 }
 
-function yahooTicker(symbol: ForexSymbol): string {
-  if (symbol === "EURUSD") return "EURUSD=X";
-  if (symbol === "GBPUSD") return "GBPUSD=X";
-  if (symbol === "USDJPY") return "USDJPY=X";
-  if (symbol === "XAUUSD") return "XAUUSD=X";
-  if (symbol === "XAGUSD") return "XAGUSD=X";
-  return "CL=F";
+function fxSpread(symbol: ForexSymbol): number {
+  if (symbol === "USDJPY") return 0.01;
+  if (symbol === "XAUUSD") return 0.2;
+  if (symbol === "XAGUSD") return 0.005;
+  if (symbol === "USOILUSD") return 0.02;
+  return 0.00002;
 }
 
 export class MarketDataService {
-  private liveCacheAt = 0;
-  private liveCache = new Map<ForexSymbol, number>();
+  /** Wall-clock time the API last accepted a fresh upstream tick. */
+  private receivedAtBySymbol = new Map<ForexSymbol, number>();
+  private sourceBySymbol = new Map<ForexSymbol, "mt5">();
 
-  constructor(private readonly store: StateStore) {}
+  constructor(private readonly store: StateStore, private readonly mt5: Mt5BridgeService) {}
+
+  /**
+   * Push a single MT5 tick straight into the store and return the resulting
+   * tick object so the caller can broadcast it without waiting for the slow
+   * market loop.
+   */
+  applyMt5Tick(symbol: ForexSymbol, bid: number, ask: number, brokerTs: number): PriceTick | null {
+    if (!Number.isFinite(bid) || !Number.isFinite(ask) || bid <= 0) return null;
+    let tickBid = bid;
+    let tickAsk = ask;
+    if (tickAsk < tickBid) {
+      const tmp = tickAsk;
+      tickAsk = tickBid;
+      tickBid = tmp;
+    }
+    if (tickAsk === tickBid) {
+      const half = fxSpread(symbol) / 2;
+      tickBid = tickBid - half;
+      tickAsk = tickAsk + half;
+    }
+    const next: PriceTick = {
+      symbol,
+      bid: roundPrice(symbol, tickBid),
+      ask: roundPrice(symbol, tickAsk),
+      timestamp: brokerTs > 0 ? brokerTs : Date.now()
+    };
+    let changed = false;
+    this.store.update((s) => {
+      const cur = s.prices[symbol];
+      if (!cur || cur.bid !== next.bid || cur.ask !== next.ask || cur.timestamp !== next.timestamp) {
+        s.prices[symbol] = next;
+        changed = true;
+      }
+    });
+    this.receivedAtBySymbol.set(symbol, Date.now());
+    this.sourceBySymbol.set(symbol, "mt5");
+    return changed ? next : null;
+  }
 
   getPrices(): PriceTick[] {
     const prices = this.store.get().prices;
     return symbols.map((s) => prices[s]);
   }
 
-  private async fetchYahooMidPrices(): Promise<Map<ForexSymbol, number>> {
-    const now = Date.now();
-    if (now - this.liveCacheAt < 1000 && this.liveCache.size > 0) return this.liveCache;
-    const result = new Map<ForexSymbol, number>();
-    try {
-      const tickers = symbols.map((s) => yahooTicker(s)).join(",");
-      const response = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(tickers)}`);
-      if (!response.ok) return this.liveCache;
-      const payload = await response.json() as {
-        quoteResponse?: { result?: Array<{ symbol?: string; bid?: number; ask?: number; regularMarketPrice?: number }> };
-      };
-      const byTicker = new Map<string, number>();
-      for (const row of payload.quoteResponse?.result ?? []) {
-        if (!row.symbol) continue;
-        const mid = typeof row.bid === "number" && typeof row.ask === "number" && row.bid > 0 && row.ask > 0
-          ? (row.bid + row.ask) / 2
-          : row.regularMarketPrice;
-        if (typeof mid === "number" && mid > 0) byTicker.set(row.symbol, mid);
-      }
-      for (const symbol of symbols) {
-        const live = byTicker.get(yahooTicker(symbol));
-        if (typeof live === "number") result.set(symbol, live);
-      }
-      if (result.size > 0) {
-        this.liveCache = result;
-        this.liveCacheAt = now;
-      }
-    } catch {
-      // keep cache
-    }
-    return result.size > 0 ? result : this.liveCache;
-  }
-
-  private async fetchTvcMidPrices(): Promise<Map<ForexSymbol, number>> {
-    const result = new Map<ForexSymbol, number>();
-    const tracked = symbols.filter((s) => tvcTicker(s));
-    if (tracked.length === 0) return result;
-    try {
-      const response = await fetch("https://scanner.tradingview.com/global/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          symbols: { tickers: tracked.map((s) => tvcTicker(s) as string), query: { types: [] } },
-          columns: ["close"]
-        })
-      });
-      if (!response.ok) return result;
-      const payload = await response.json() as { data?: Array<{ s: string; d?: number[] }> };
-      for (const row of payload.data ?? []) {
-        const close = row.d?.[0];
-        if (typeof close !== "number") continue;
-        const symbol = tracked.find((s) => tvcTicker(s) === row.s);
-        if (symbol) result.set(symbol, close);
-      }
-    } catch {
-      // no-op
-    }
-    return result;
-  }
-
+  /**
+   * Slow-loop sweep: re-reads the MT5 cache for every symbol so the store
+   * always reflects the latest known broker bid/ask, even for symbols that
+   * haven't ticked since the last sweep. The per-tick push (`applyMt5Tick`)
+   * does the bulk of the work; this is the periodic safety net.
+   */
   async tickPrices(): Promise<PriceTick[]> {
-    const state = this.store.get();
-    const live = state.settings.priceSourceMode === "demo" ? await this.fetchYahooMidPrices() : new Map<ForexSymbol, number>();
-    const tvc = state.settings.priceSourceMode === "tvc-reference" ? await this.fetchTvcMidPrices() : new Map<ForexSymbol, number>();
     const updates: PriceTick[] = [];
+    const now = Date.now();
+    const mt5Active = this.mt5.isMt5Connected();
+    if (!mt5Active) return updates;
+
     this.store.update((s) => {
       for (const symbol of symbols) {
         const current = s.prices[symbol];
-        const drift = (Math.random() - 0.5) * 0.0006;
-        const simulatedMid =
-          symbol === "USDJPY" ? current.bid + drift * 100 :
-          symbol === "XAUUSD" ? current.bid + drift * 120 :
-          symbol === "XAGUSD" ? current.bid + drift * 8 :
-          symbol === "USOILUSD" ? current.bid + drift * 40 :
-          current.bid + drift;
-        const nextMid = live.get(symbol) ?? tvc.get(symbol) ?? simulatedMid;
-        const spread =
-          symbol === "USDJPY" ? 0.02 :
-          symbol === "XAUUSD" ? 0.2 :
-          symbol === "XAGUSD" ? 0.02 :
-          symbol === "USOILUSD" ? 0.03 :
-          0.0002;
+        const mt5Quote = this.mt5.getBidAsk(symbol);
+        if (!mt5Quote || mt5Quote.bid <= 0 || mt5Quote.ask < mt5Quote.bid) continue;
+
+        let bid = mt5Quote.bid;
+        let ask = mt5Quote.ask;
+        if (ask === bid) {
+          const half = fxSpread(symbol) / 2;
+          bid = bid - half;
+          ask = ask + half;
+        }
         const next: PriceTick = {
           symbol,
-          bid: roundPrice(symbol, nextMid),
-          ask: roundPrice(symbol, nextMid + spread),
-          timestamp: Date.now()
+          bid: roundPrice(symbol, bid),
+          ask: roundPrice(symbol, ask),
+          timestamp: mt5Quote.updatedAt
         };
-        s.prices[symbol] = next;
-        updates.push(next);
+
+        if (next.bid !== current.bid || next.ask !== current.ask || next.timestamp !== current.timestamp) {
+          s.prices[symbol] = next;
+          updates.push(next);
+          this.receivedAtBySymbol.set(symbol, now);
+          this.sourceBySymbol.set(symbol, "mt5");
+        } else {
+          this.receivedAtBySymbol.set(symbol, now);
+          this.sourceBySymbol.set(symbol, "mt5");
+        }
       }
     });
     return updates;
+  }
+
+  /**
+   * Build the public board payload from in-memory price state.
+   * Returns "live" once every symbol has been refreshed at least once.
+   */
+  getBoardSnapshot(): BoardSnapshot {
+    const prices = this.store.get().prices;
+    const now = Date.now();
+    const cutoff = now - 60_000;
+    const staleAfter = 8_000;
+    const mtStatus = this.mt5.getStatus();
+    const quotes = symbols.map((s) => {
+      const p = prices[s];
+      const receivedAt = this.receivedAtBySymbol.get(s) ?? p.timestamp;
+      const sourceLabel: "mt5" | "cache" = this.sourceBySymbol.get(s) ?? "cache";
+      const stale = !mtStatus.mt5Connected || receivedAt < now - staleAfter;
+      return {
+        symbol: s,
+        bid: p.bid,
+        ask: p.ask,
+        mid: (p.bid + p.ask) / 2,
+        // The board reports the API-side freshness so weekend / market-closed
+        // ticks (where the broker timestamp is stale) still register as live.
+        updatedAt: receivedAt,
+        source: sourceLabel,
+        stale
+      };
+    });
+    const fresh = quotes.filter((q) => q.updatedAt >= cutoff && !q.stale).length;
+    const errorMessage = mtStatus.lastError ?? mtStatus.mt5StatusReason;
+    let source: BoardSnapshot["source"] = "live";
+    if (!mtStatus.mt5Connected) source = errorMessage ? "error" : "partial";
+    else if (fresh === 0) source = errorMessage ? "error" : "partial";
+    else if (fresh < quotes.length) source = "partial";
+    return {
+      configured: true,
+      quoteCount: fresh,
+      quotes,
+      source,
+      errorMessage: fresh > 0 ? undefined : errorMessage,
+      mt5Connected: mtStatus.mt5Connected,
+      mt5StatusReason: mtStatus.mt5StatusReason,
+      minRequestIntervalMs: 1500,
+      historyCacheTtlMs: 30_000
+    };
   }
 }

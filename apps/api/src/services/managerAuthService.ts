@@ -6,7 +6,7 @@ import { signManagerToken } from "../auth/tokens";
 import { findManagerIdByReferralCode, normalizeReferralCodeInput } from "./managerCommissionHelpers";
 
 const DEMO_MANAGER_EMAIL = "partner@propprime.demo";
-const DEMO_MANAGER_PASSWORD = "partner123";
+const DEMO_MANAGER_PASSWORD = "PartnerDemo2026!";
 
 function generateReferralCode(state: { platformManagers: PlatformManagerRecord[] }): string {
   for (let i = 0; i < 20; i++) {
@@ -65,7 +65,7 @@ export class ManagerAuthService {
      * Realign the demo partner's password to the documented credential on
      * every boot — same rationale as the admin operator. Without this, a
      * later password change would silently lock the user out of the partner
-     * hub even though the login page still advertises `partner123`.
+     * hub even though the login page still advertises the demo password.
      */
     const stillMatches = await bcrypt.compare(DEMO_MANAGER_PASSWORD, existing.passwordHash);
     if (!stillMatches) {

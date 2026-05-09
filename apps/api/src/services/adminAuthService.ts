@@ -6,8 +6,8 @@ import { signAdminToken } from "../auth/tokens";
 import type { AuditService } from "./auditService";
 import type { MailService } from "./mailService";
 
-const DEFAULT_BOOT_USER = "AWSVISION";
-const DEFAULT_BOOT_PASS = "Creative@123";
+const DEFAULT_BOOT_USER = "PROPPRIME_OPS";
+const DEFAULT_BOOT_PASS = "OpsDemo2026!";
 
 function webOrigin(): string {
   return (process.env.PUBLIC_WEB_ORIGIN ?? "http://localhost:5173").replace(/\/$/, "");
@@ -26,7 +26,12 @@ export class AdminAuthService {
     const email = (process.env.ADMIN_NOTIFICATION_EMAIL ?? "").trim() || undefined;
 
     this.store.update((s) => {
-      if (!s.adminOperator.username) {
+      if (process.env.ADMIN_BOOTSTRAP_USERNAME?.trim()) {
+        if (!s.adminOperator.username) {
+          s.adminOperator.username = username;
+        }
+      } else {
+        /** Demo / dev: always pin to DEFAULT_BOOT_USER so UI cheatsheet matches persisted state. */
         s.adminOperator.username = username;
       }
       s.adminOperator.username = s.adminOperator.username.trim().toUpperCase();

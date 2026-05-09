@@ -36,7 +36,7 @@ apps/desktop/release/
 *.exe.tmp
 
 # Local API persistence (regenerate from defaults)
-apps/api/data/state.json
+apps/api/data/
 
 # Logs
 *.log

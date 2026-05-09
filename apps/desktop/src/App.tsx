@@ -7,6 +7,7 @@ import type {
   Position,
   PriceTick
 } from "@paper-trader/shared";
+import { symbolRetailMarketSession } from "@paper-trader/shared";
 import type { UTCTimestamp } from "lightweight-charts";
 import ChartPanel, { type Candle, type ChartType } from "./ChartPanel";
 import { formatChallengeStatusLabel } from "./challengeUi";
@@ -331,6 +332,14 @@ function Terminal({
     stopLoss: "",
     takeProfit: ""
   });
+  const [chartCtxMenu, setChartCtxMenu] = useState<{
+    x: number;
+    y: number;
+    price: number;
+    side: "BUY" | "SELL";
+    symbol: ForexSymbol;
+  } | null>(null);
+  const [retailSessionClock, setRetailSessionClock] = useState(() => Date.now());
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectRef = useRef<number | null>(null);
@@ -431,8 +440,15 @@ function Terminal({
       });
       ws.addEventListener("message", (evt) => {
         try {
-          const data = JSON.parse(String(evt.data)) as { type: string; payload: unknown };
-          if (data.type === "price") {
+          /** Server frames use `{ event, payload }`; tolerate `{ type, payload }`
+           *  too in case anything ever flips back. */
+          const data = JSON.parse(String(evt.data)) as {
+            event?: string;
+            type?: string;
+            payload: unknown;
+          };
+          const kind = data.event ?? data.type;
+          if (kind === "price") {
             const tick = data.payload as PriceTick;
             setPrices((prev) => ({ ...prev, [tick.symbol]: tick }));
             if (tick.symbol === activeSymbolRef.current) {
@@ -462,6 +478,12 @@ function Terminal({
                 return next;
               });
             }
+          } else if (kind === "positions") {
+            setPositions(data.payload as Position[]);
+          } else if (kind === "orders") {
+            setOrders(data.payload as Order[]);
+          } else if (kind === "account") {
+            setAccount(data.payload as AccountState);
           }
         } catch {
           /* ignore malformed frames */
@@ -510,6 +532,11 @@ function Terminal({
         showFlash("bad", "Enter a positive lot size.");
         return;
       }
+      const sess = symbolRetailMarketSession(orderForm.symbol);
+      if (!sess.tradeable) {
+        showFlash("bad", sess.reason);
+        return;
+      }
       const payload = {
         symbol: orderForm.symbol,
         side,
@@ -550,6 +577,97 @@ function Terminal({
       }
     },
     [reload, showFlash]
+  );
+
+  const handleChartContextMenu = useCallback(
+    (price: number, clientX: number, clientY: number) => {
+      const tick = prices[activeSymbol];
+      if (!tick) {
+        showFlash("bad", "Live price unavailable for this symbol.");
+        return;
+      }
+      const mid = (tick.bid + tick.ask) / 2;
+      /** Above market → SELL LIMIT, below market → BUY LIMIT. */
+      const side: "BUY" | "SELL" = price >= mid ? "SELL" : "BUY";
+      setChartCtxMenu({
+        x: clientX,
+        y: clientY,
+        price: roundForSymbol(activeSymbol, price),
+        side,
+        symbol: activeSymbol
+      });
+    },
+    [prices, activeSymbol, showFlash]
+  );
+
+  const placeLimitFromChart = useCallback(async () => {
+    if (!chartCtxMenu) return;
+    const lot = Number(orderForm.lotSize);
+    if (!Number.isFinite(lot) || lot <= 0) {
+      showFlash("bad", "Enter a positive lot size.");
+      setChartCtxMenu(null);
+      return;
+    }
+    const sess = symbolRetailMarketSession(chartCtxMenu.symbol);
+    if (!sess.tradeable) {
+      showFlash("bad", sess.reason);
+      setChartCtxMenu(null);
+      return;
+    }
+    setBusy(true);
+    try {
+      const out = await apiPlaceOrder({
+        symbol: chartCtxMenu.symbol,
+        side: chartCtxMenu.side,
+        type: "LIMIT",
+        lotSize: lot,
+        price: chartCtxMenu.price
+      });
+      if (!out.ok) {
+        showFlash("bad", out.error ?? "Limit order rejected.");
+      } else {
+        showFlash(
+          "ok",
+          `${chartCtxMenu.side} LIMIT ${lot.toFixed(2)} ${chartCtxMenu.symbol} @ ${formatPrice(
+            chartCtxMenu.symbol,
+            chartCtxMenu.price
+          )} placed.`
+        );
+        await reload();
+      }
+    } finally {
+      setBusy(false);
+      setChartCtxMenu(null);
+    }
+  }, [chartCtxMenu, orderForm.lotSize, reload, showFlash]);
+
+  useEffect(() => {
+    if (!chartCtxMenu) return;
+    function onDocClick(): void {
+      setChartCtxMenu(null);
+    }
+    function onKey(e: KeyboardEvent): void {
+      if (e.key === "Escape") setChartCtxMenu(null);
+    }
+    window.addEventListener("mousedown", onDocClick);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onDocClick);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [chartCtxMenu]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setRetailSessionClock(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+  const retailSessionActive = useMemo(
+    () => symbolRetailMarketSession(activeSymbol, new Date(retailSessionClock)),
+    [activeSymbol, retailSessionClock]
+  );
+  const retailSessionOrderForm = useMemo(
+    () => symbolRetailMarketSession(orderForm.symbol, new Date(retailSessionClock)),
+    [orderForm.symbol, retailSessionClock]
   );
 
   const cancelOrder = useCallback(
@@ -724,7 +842,12 @@ function Terminal({
           </div>
 
           <div className="term__chart">
-            <ChartPanel symbol={activeSymbol} data={candles} chartType={chartType} />
+            <ChartPanel
+              symbol={activeSymbol}
+              data={candles}
+              chartType={chartType}
+              onChartContextMenu={handleChartContextMenu}
+            />
           </div>
         </section>
 
@@ -810,20 +933,26 @@ function Terminal({
             <button
               className="btn btn--sell"
               onClick={() => void placeOrder("SELL")}
-              disabled={busy}
-              title="Sell"
+              disabled={busy || !retailSessionOrderForm.tradeable}
+              title={retailSessionOrderForm.tradeable ? "Sell" : retailSessionOrderForm.reason}
             >
               <ArrowDownRight size={16} /> Sell
             </button>
             <button
               className="btn btn--buy"
               onClick={() => void placeOrder("BUY")}
-              disabled={busy}
-              title="Buy"
+              disabled={busy || !retailSessionOrderForm.tradeable}
+              title={retailSessionOrderForm.tradeable ? "Buy" : retailSessionOrderForm.reason}
             >
               <ArrowUpRight size={16} /> Buy
             </button>
           </div>
+
+          {!retailSessionOrderForm.tradeable && (
+            <p className="alert alert--warn">
+              <CircleAlert size={14} /> {retailSessionOrderForm.reason}
+            </p>
+          )}
 
           {progress && progress.status !== "ACTIVE" && progress.status !== "PASSED" && (
             <p className="alert alert--warn">
@@ -880,6 +1009,45 @@ function Terminal({
             showFlash("ok", "Password updated.");
           }}
         />
+      )}
+
+      {chartCtxMenu && (
+        <div
+          className="dtChartCtxMenu"
+          role="menu"
+          style={{ left: chartCtxMenu.x, top: chartCtxMenu.y }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <div className="dtChartCtxMenu__head">
+            <span className="dtChartCtxMenu__sym">{chartCtxMenu.symbol}</span>
+            <span className="dtChartCtxMenu__price">
+              {formatPrice(chartCtxMenu.symbol, chartCtxMenu.price)}
+            </span>
+          </div>
+          <button
+            type="button"
+            className={`dtChartCtxMenu__action ${
+              chartCtxMenu.side === "BUY" ? "dtChartCtxMenu__action--buy" : "dtChartCtxMenu__action--sell"
+            }`}
+            disabled={busy || !retailSessionActive.tradeable}
+            title={retailSessionActive.tradeable ? undefined : retailSessionActive.reason}
+            onClick={() => void placeLimitFromChart()}
+          >
+            {chartCtxMenu.side === "BUY" ? "Buy limit" : "Sell limit"}
+            <span className="dtChartCtxMenu__lot">{Number(orderForm.lotSize).toFixed(2)} lot</span>
+          </button>
+          {!retailSessionActive.tradeable && (
+            <div className="dtChartCtxMenu__notice">{retailSessionActive.reason}</div>
+          )}
+          <button
+            type="button"
+            className="dtChartCtxMenu__cancel"
+            onClick={() => setChartCtxMenu(null)}
+          >
+            Cancel
+          </button>
+        </div>
       )}
     </div>
   );

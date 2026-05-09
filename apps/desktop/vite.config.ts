@@ -46,7 +46,10 @@ export default defineConfig({
       react: reactDir,
       "react-dom": reactDomDir,
       "react/jsx-runtime": path.join(reactDir, "jsx-runtime"),
-      "react/jsx-dev-runtime": path.join(reactDir, "jsx-dev-runtime")
+      "react/jsx-dev-runtime": path.join(reactDir, "jsx-dev-runtime"),
+      /** Resolve workspace package to its TS source so runtime imports
+       *  (e.g. market-session helpers) work without building dist first. */
+      "@paper-trader/shared": path.resolve(here, "../../packages/shared/src/index.ts")
     }
   },
   optimizeDeps: {

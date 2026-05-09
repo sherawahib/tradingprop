@@ -10,6 +10,7 @@
     "@paper-trader/shared": "*",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.3",
     "ws": "^8.18.3"

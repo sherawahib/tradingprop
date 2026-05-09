@@ -1,6 +1,15 @@
 import type { PlatformState } from "../domain";
 import { defaultAccountId } from "../domain";
 
+/** Latest enforcement event surfaced to the portal — one violation, summarised. */
+export interface ClientBreachReasonJson {
+  code: string;
+  severity: "WARNING" | "HARD_BREACH" | "RULE_FREEZE";
+  message: string;
+  createdAt: number;
+  evidence: Record<string, number | string | boolean | null>;
+}
+
 /** Mirrors `GET /client/summary/:accountId` JSON — shared so portal + routes stay aligned. */
 export type ClientTradingSummaryJson = {
   accountId: string;
@@ -20,6 +29,10 @@ export type ClientTradingSummaryJson = {
   payoutMinProfitUsd: number;
   ledgerProfitUsd: number;
   payoutEligibleApprox: boolean;
+  /** When the evaluation moved into BREACHED or LOCKED. */
+  violatedAt?: number;
+  /** Latest enforcement event for this account when status is BREACHED or LOCKED. */
+  breachReason?: ClientBreachReasonJson;
 };
 
 export function computeTradingAccountSummary(state: PlatformState, accountId: string): ClientTradingSummaryJson | null {
@@ -40,6 +53,23 @@ export function computeTradingAccountSummary(state: PlatformState, accountId: st
     traderRow?.kycStatus === "APPROVED" &&
     ledgerProfitUsd >= payoutMinProfit;
 
+  let breachReason: ClientBreachReasonJson | undefined;
+  if (progress.status === "BREACHED" || progress.status === "LOCKED") {
+    const targetSeverity = progress.status === "BREACHED" ? "HARD_BREACH" : "RULE_FREEZE";
+    const match = state.violations.find(
+      (v) => v.accountId === accountId && v.severity === targetSeverity
+    );
+    if (match) {
+      breachReason = {
+        code: match.code,
+        severity: match.severity,
+        message: match.message,
+        createdAt: match.createdAt,
+        evidence: match.evidence
+      };
+    }
+  }
+
   return {
     accountId,
     balance: ledger.balance,
@@ -57,6 +87,8 @@ export function computeTradingAccountSummary(state: PlatformState, accountId: st
     payoutSplitPct: template?.payoutSplitPct ?? 80,
     payoutMinProfitUsd: payoutMinProfit,
     ledgerProfitUsd,
-    payoutEligibleApprox
+    payoutEligibleApprox,
+    ...(progress.violatedAt ? { violatedAt: progress.violatedAt } : {}),
+    ...(breachReason ? { breachReason } : {})
   };
 }

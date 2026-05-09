@@ -30,6 +30,10 @@ interface ChartPanelProps {
   onLineDrag?: (kind: "SL" | "TP", price: number, done: boolean) => void;
   onChartClick?: (price: number) => void;
   onLineClick?: (line: PriceLineConfig) => void;
+  /** Fired when the user right-clicks the chart canvas. Provides the price
+   *  under the cursor and the viewport coordinates so the host can render a
+   *  context menu (e.g. for placing limit / stop pending orders). */
+  onChartContextMenu?: (price: number, clientX: number, clientY: number) => void;
 }
 
 function ChartPanel({
@@ -43,7 +47,8 @@ function ChartPanel({
   onHoverInfo,
   onLineDrag,
   onChartClick,
-  onLineClick
+  onLineClick,
+  onChartContextMenu
 }: ChartPanelProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -58,6 +63,7 @@ function ChartPanel({
   const onChartClickRef = useRef(onChartClick);
   const onLineClickRef = useRef(onLineClick);
   const onLineDragRef = useRef(onLineDrag);
+  const onChartContextMenuRef = useRef(onChartContextMenu);
   const [customLines, setCustomLines] = useState<PriceLineConfig[]>([]);
   const [customMarkers, setCustomMarkers] = useState<Marker[]>([]);
   const [barSpacing, setBarSpacing] = useState(6);
@@ -72,7 +78,8 @@ function ChartPanel({
     onChartClickRef.current = onChartClick;
     onLineClickRef.current = onLineClick;
     onLineDragRef.current = onLineDrag;
-  }, [onPricePick, onHoverInfo, onChartClick, onLineClick, onLineDrag]);
+    onChartContextMenuRef.current = onChartContextMenu;
+  }, [onPricePick, onHoverInfo, onChartClick, onLineClick, onLineDrag, onChartContextMenu]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -309,15 +316,27 @@ function ChartPanel({
       }
     }
 
+    function onContextMenu(event: MouseEvent): void {
+      if (!onChartContextMenuRef.current || !seriesRef.current) return;
+      const rect = containerEl.getBoundingClientRect();
+      const y = event.clientY - rect.top;
+      const price = seriesRef.current.coordinateToPrice(y);
+      if (typeof price !== "number") return;
+      event.preventDefault();
+      onChartContextMenuRef.current(price, event.clientX, event.clientY);
+    }
+
     containerEl.addEventListener("pointerdown", onPointerDown);
     containerEl.addEventListener("pointermove", onPointerMove);
     containerEl.addEventListener("pointerup", onPointerUp);
     containerEl.addEventListener("pointercancel", onPointerUp);
+    containerEl.addEventListener("contextmenu", onContextMenu);
     return () => {
       containerEl.removeEventListener("pointerdown", onPointerDown);
       containerEl.removeEventListener("pointermove", onPointerMove);
       containerEl.removeEventListener("pointerup", onPointerUp);
       containerEl.removeEventListener("pointercancel", onPointerUp);
+      containerEl.removeEventListener("contextmenu", onContextMenu);
     };
   }, [lines, drawingTool]);
 

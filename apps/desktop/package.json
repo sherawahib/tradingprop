@@ -1,7 +1,7 @@
 {
   "name": "@paper-trader/desktop",
   "productName": "PropPrime Terminal",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "author": "PropPrime",
   "description": "PropPrime desktop trading terminal (Windows / Electron). Connects to the @paper-trader/api backend over HTTP + WebSocket. Independent from the web app.",

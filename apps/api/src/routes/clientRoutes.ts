@@ -11,6 +11,19 @@ import {
   PROGRAM_SIGNUP_PRESETS,
   resolveSignupProgramSlug
 } from "../config/programSkuPresets";
+import { getBankTransferCheckoutInfo } from "../config/bankTransferCheckout";
+
+function parsePurchasePaymentMethod(raw: unknown): "SIMULATED_CARD" | "BANK_TRANSFER" {
+  const s = typeof raw === "string" ? raw.trim().toUpperCase().replace(/-/g, "_") : "";
+  if (s === "BANK_TRANSFER") return "BANK_TRANSFER";
+  return "SIMULATED_CARD";
+}
+
+function parsePaymentReference(raw: unknown): string | undefined {
+  if (typeof raw !== "string") return undefined;
+  const t = raw.trim().slice(0, 96);
+  return t.length ? t : undefined;
+}
 
 function mergeProfile(raw: ClientProfile | undefined): ClientProfile {
   const base = emptyClientProfile();
@@ -203,6 +216,10 @@ export function registerClientRoutes(app: Express, ctx: AppContext): void {
     return res.status(201).json(payload ?? { ok: true });
   });
 
+  app.get("/client/checkout/bank-transfer-info", requireBearerAuth, (_req, res) => {
+    return res.json(getBankTransferCheckoutInfo());
+  });
+
   app.get("/client/packages/catalog", requireBearerAuth, (_req, res) => {
     const presets = listProgramSignupOptions();
     return res.json(
@@ -249,6 +266,8 @@ export function registerClientRoutes(app: Express, ctx: AppContext): void {
       return res.status(400).json({ error: "programSlug is required and must be a known SKU." });
     }
     const preset = resolveSignupProgramSlug(slugUpper);
+    const paymentMethod = parsePurchasePaymentMethod(req.body?.paymentMethod);
+    const paymentReference = parsePaymentReference(req.body?.paymentReference);
 
     const s0 = ctx.store.get();
     const owner = s0.clientUsers.find((u) => u.id === uid);
@@ -296,13 +315,20 @@ export function registerClientRoutes(app: Express, ctx: AppContext): void {
 
     ctx.auditService.log(
       "client.package.purchased",
-      { programSlug: slugUpper, newAccountId, terminalAccountId: summary.id },
+      {
+        programSlug: slugUpper,
+        newAccountId,
+        terminalAccountId: summary.id,
+        paymentMethod,
+        ...(paymentReference ? { paymentReference } : {})
+      },
       uid,
       newAccountId
     );
 
     return res.status(201).json({
       ok: true,
+      paymentMethod,
       accountId: newAccountId,
       terminal: summary,
       initialTerminal: {

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { PARTNER_SIGN_IN_HASH } from "./partnerAuth";
 import type { MarketingSubView } from "./marketingTypes";
+import SiteFooter from "./SiteFooter";
 
 export interface MarketingShellProps {
   active: MarketingSubView;
@@ -72,68 +72,7 @@ function MarketingShell({
 
       <main className="fxSite">{children}</main>
 
-      <footer className="fxFooterGrid">
-        <div>
-          <strong className="fxFooterBrand">PropPrime Markets</strong>
-          <p className="fxFooterMuted">Educational prototype — not investment advice or a brokerage offer.</p>
-        </div>
-        <div className="fxFooterCols">
-          <div>
-            <h4 className="fxFooterHdr">Explore</h4>
-            <button type="button" className="fxFooterLink fxFooterBtnAsLink" onClick={() => onNavigate("home")}>
-              Home
-            </button>
-            <button type="button" className="fxFooterLink fxFooterBtnAsLink" onClick={() => onNavigate("programs")}>
-              Programs
-            </button>
-            <button type="button" className="fxFooterLink fxFooterBtnAsLink" onClick={() => onNavigate("how")}>
-              How it works
-            </button>
-            <button type="button" className="fxFooterLink fxFooterBtnAsLink" onClick={() => onNavigate("payouts")}>
-              Payouts
-            </button>
-            <button type="button" className="fxFooterLink fxFooterBtnAsLink" onClick={() => onNavigate("resources")}>
-              Resources
-            </button>
-          </div>
-          <div>
-            <h4 className="fxFooterHdr">Account</h4>
-            <button type="button" className="fxFooterLink fxFooterBtnAsLink" onClick={onOpenPortal}>
-              Client portal
-            </button>
-            <button
-              type="button"
-              className="fxFooterLink fxFooterBtnAsLink"
-              onClick={() => {
-                window.location.hash = PARTNER_SIGN_IN_HASH;
-              }}
-            >
-              Partner program
-            </button>
-          </div>
-          <div>
-            <h4 className="fxFooterHdr">Documents</h4>
-            <button type="button" className="fxFooterLink fxFooterBtnAsLink" onClick={() => onNavigate("terms")}>
-              Terms of service
-            </button>
-            <button type="button" className="fxFooterLink fxFooterBtnAsLink" onClick={() => onNavigate("privacy")}>
-              Privacy
-            </button>
-            <button type="button" className="fxFooterLink fxFooterBtnAsLink" onClick={() => onNavigate("cookies")}>
-              Cookies
-            </button>
-            <button type="button" className="fxFooterLink fxFooterBtnAsLink" onClick={() => onNavigate("risk")}>
-              Risk disclosure
-            </button>
-            <button type="button" className="fxFooterLink fxFooterBtnAsLink" onClick={() => onNavigate("support")}>
-              Support
-            </button>
-            <button type="button" className="fxFooterLink fxFooterBtnAsLink" onClick={() => onNavigate("resources")}>
-              FAQ and API refs
-            </button>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter onNavigate={onNavigate} onOpenPortal={onOpenPortal} variant="marketing" />
     </div>
   );
 }

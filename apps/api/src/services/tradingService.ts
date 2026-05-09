@@ -9,6 +9,7 @@ import type {
   Position,
   PriceTick
 } from "@paper-trader/shared";
+import { symbolRetailMarketSession } from "@paper-trader/shared";
 import { isWithinSyntheticNewsBlackoutUtc } from "../config/economicNewsCalendar";
 import { defaultAccountId, symbols, type AccountTradingConduct, type GlobalRiskEntryEcho, type PlatformState } from "../domain";
 import { StateStore } from "../db/stateStore";
@@ -31,7 +32,7 @@ import {
   CONDUCT_SCALP_MIN_SHORT_HOLDS,
   CONDUCT_SCALP_WINDOW_MS
 } from "./tradingConductRules";
-import { getPipSize, marginPerLotAt100Leverage, pipValuePerLot, roundPrice, seededRandom } from "./utils";
+import { getPipSize, marginPerLotAt100Leverage, roundPrice, seededRandom, getPipValuePerLot, isCryptoUsdPair } from "./utils";
 
 function ensureConductLedger(s: PlatformState, accountId: string): AccountTradingConduct {
   let c = s.tradingConductByAccountId[accountId];
@@ -294,7 +295,7 @@ export class TradingService {
   calcUnrealizedPnl(pos: Position, tick: PriceTick): number {
     const delta = pos.side === "BUY" ? tick.bid - pos.entryPrice : pos.entryPrice - tick.ask;
     const pips = delta / getPipSize(pos.symbol);
-    return Number((pips * pipValuePerLot * pos.lotSize).toFixed(2));
+    return Number((pips * getPipValuePerLot(pos.symbol) * pos.lotSize).toFixed(2));
   }
 
   updatePositionPnl(): void {
@@ -324,6 +325,13 @@ export class TradingService {
     if (lotSize <= 0 || lotSize > 5) return { status: 400, body: { error: "Lot size must be between 0.01 and 5." } };
     if (!["MARKET", "LIMIT", "STOP"].includes(type)) return { status: 400, body: { error: "Invalid order type." } };
     if ((type === "LIMIT" || type === "STOP") && typeof price !== "number") return { status: 400, body: { error: "Price is required for pending orders." } };
+
+    /** Forex / metals / energies / indices respect weekend + nightly maintenance.
+     *  Crypto pairs are 24/7 — `symbolRetailMarketSession` handles that. */
+    const session = symbolRetailMarketSession(symbol);
+    if (!session.tradeable) {
+      return { status: 403, body: { error: session.reason || "Market is closed for this instrument." } };
+    }
 
     this.store.update((s) => {
       ensureLedger(s, accountId);
@@ -458,7 +466,7 @@ export class TradingService {
       const closeLot = Math.min(position.lotSize, lotToClose);
       const signedDelta = position.side === "BUY" ? closePrice - position.entryPrice : position.entryPrice - closePrice;
       const pips = signedDelta / getPipSize(position.symbol);
-      const realized = Number((pips * pipValuePerLot * closeLot).toFixed(2));
+      const realized = Number((pips * getPipValuePerLot(position.symbol) * closeLot).toFixed(2));
       closedRealized = realized;
       const ledger = ensureLedger(s, actor);
       ledger.balance = Number((ledger.balance + realized).toFixed(2));
@@ -477,7 +485,9 @@ export class TradingService {
         filledPrice: closePrice,
         closedAt: Date.now(),
         closePrice,
-        closeReason: reason
+        closeReason: reason,
+        realizedPnl: realized,
+        closingFor: position.side
       });
       const conduct = ensureConductLedger(s, actor);
       const sym = position.symbol;
@@ -524,6 +534,9 @@ export class TradingService {
     this.store.update((s) => {
       for (const order of s.orders) {
         if (order.status !== "PENDING") continue;
+        /** Don't fill pending orders for instruments outside their session
+         *  window (weekend / nightly maintenance). They stay pending. */
+        if (!symbolRetailMarketSession(order.symbol).tradeable) continue;
         const tick = s.prices[order.symbol];
         if (!this.shouldFillPending(order, tick)) continue;
         const conflict = s.positions.some(
@@ -663,7 +676,17 @@ export class TradingService {
     const base = (tick.bid + tick.ask) / 2;
     const now = Math.floor(Date.now() / 1000);
     const start = now - safeLimit * seconds;
-    const volatility = symbol === "USDJPY" ? 0.08 : symbol === "XAUUSD" ? 0.9 : symbol === "XAGUSD" ? 0.07 : symbol === "USOILUSD" ? 0.3 : 0.0007;
+    const volatility = isCryptoUsdPair(symbol)
+      ? Math.max(base * 0.0004, base * 0.00008)
+      : symbol === "USDJPY"
+        ? 0.08
+        : symbol === "XAUUSD"
+          ? 0.9
+          : symbol === "XAGUSD"
+            ? 0.07
+            : symbol === "USOILUSD"
+              ? 0.3
+              : 0.0007;
     const candles: Array<{ time: number; open: number; high: number; low: number; close: number }> = [];
     let previousClose = base;
     for (let i = 0; i < safeLimit; i += 1) {

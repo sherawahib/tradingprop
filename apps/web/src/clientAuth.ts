@@ -202,6 +202,14 @@ export async function apiListPackageCatalog(): Promise<PackageCatalogEntry[]> {
   return (await r.json()) as PackageCatalogEntry[];
 }
 
+export interface PackageBreachReason {
+  code: string;
+  severity: "WARNING" | "HARD_BREACH" | "RULE_FREEZE";
+  message: string;
+  createdAt: number;
+  evidence: Record<string, number | string | boolean | null>;
+}
+
 /** One purchased package on the portal dashboard — ledger + challenge row for that terminal login. */
 export interface PackageDashboardSummary {
   terminalAccountId: string;
@@ -225,6 +233,28 @@ export interface PackageDashboardSummary {
   payoutMinProfitUsd?: number;
   ledgerProfitUsd?: number;
   payoutEligibleApprox?: boolean;
+  violatedAt?: number;
+  breachReason?: PackageBreachReason;
+}
+
+export type PackagePurchasePaymentMethod = "SIMULATED_CARD" | "BANK_TRANSFER";
+
+export interface BankTransferCheckoutInfo {
+  beneficiaryName: string;
+  bankName: string;
+  iban: string;
+  swiftBic: string;
+  currency: string;
+  referenceHint: string;
+}
+
+export async function apiBankTransferCheckoutInfo(): Promise<BankTransferCheckoutInfo> {
+  const r = await fetch(`${API_BASE}/client/checkout/bank-transfer-info`, { headers: bearerHeaders() });
+  const data = (await r.json().catch(() => ({}))) as BankTransferCheckoutInfo & { error?: string };
+  if (!r.ok) {
+    throw new Error(data.error ?? "Could not load bank transfer instructions.");
+  }
+  return data;
 }
 
 export async function apiListPackageDashboardSummaries(): Promise<PackageDashboardSummary[]> {
@@ -236,15 +266,22 @@ export async function apiListPackageDashboardSummaries(): Promise<PackageDashboa
   return (await r.json()) as PackageDashboardSummary[];
 }
 
-export async function apiPurchasePackage(programSlug: string): Promise<{
+export async function apiPurchasePackage(
+  programSlug: string,
+  options?: { paymentMethod?: PackagePurchasePaymentMethod; paymentReference?: string }
+): Promise<{
   accountId: string;
   terminal: TerminalAccountSummary;
   initialTerminal: InitialTerminalCredentials;
 }> {
+  const body: Record<string, unknown> = { programSlug };
+  if (options?.paymentMethod) body.paymentMethod = options.paymentMethod;
+  if (options?.paymentReference?.trim()) body.paymentReference = options.paymentReference.trim().slice(0, 96);
+
   const r = await fetch(`${API_BASE}/client/packages/purchase`, {
     method: "POST",
     headers: jsonAuthHeaders(),
-    body: JSON.stringify({ programSlug })
+    body: JSON.stringify(body)
   });
   const data = (await r.json().catch(() => ({}))) as {
     accountId?: string;

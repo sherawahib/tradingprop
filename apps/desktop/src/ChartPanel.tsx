@@ -24,6 +24,10 @@ interface ChartPanelProps {
   symbol: string;
   data: Candle[];
   chartType: ChartType;
+  /** Fired when the user right-clicks the chart canvas. Provides the price
+   *  under the cursor and the viewport coordinates so the host can render a
+   *  context menu (e.g. for placing limit pending orders). */
+  onChartContextMenu?: (price: number, clientX: number, clientY: number) => void;
 }
 
 /**
@@ -32,12 +36,17 @@ interface ChartPanelProps {
  * resizes via ResizeObserver, and refits on symbol change. Drawing tools and
  * SL/TP drag are intentionally left out for the desktop build.
  */
-function ChartPanel({ symbol, data, chartType }: ChartPanelProps) {
+function ChartPanel({ symbol, data, chartType, onChartContextMenu }: ChartPanelProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick" | "Bar" | "Line" | "Area"> | null>(null);
   const hasFittedRef = useRef(false);
+  const onChartContextMenuRef = useRef(onChartContextMenu);
   const [barSpacing, setBarSpacing] = useState(8);
+
+  useEffect(() => {
+    onChartContextMenuRef.current = onChartContextMenu;
+  }, [onChartContextMenu]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -111,8 +120,21 @@ function ChartPanel({ symbol, data, chartType }: ChartPanelProps) {
     });
     resizeObserver.observe(containerRef.current);
 
+    const containerEl = containerRef.current;
+    function onContextMenu(event: MouseEvent): void {
+      if (!onChartContextMenuRef.current || !seriesRef.current || !containerEl) return;
+      const rect = containerEl.getBoundingClientRect();
+      const y = event.clientY - rect.top;
+      const price = seriesRef.current.coordinateToPrice(y);
+      if (typeof price !== "number") return;
+      event.preventDefault();
+      onChartContextMenuRef.current(price, event.clientX, event.clientY);
+    }
+    containerEl?.addEventListener("contextmenu", onContextMenu);
+
     return () => {
       resizeObserver.disconnect();
+      containerEl?.removeEventListener("contextmenu", onContextMenu);
       chartRef.current = null;
       seriesRef.current = null;
       try {

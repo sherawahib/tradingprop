@@ -43,11 +43,33 @@ import {
   type PackageCatalogEntry,
   type PackageDashboardSummary,
   type PackageProgramFamily,
+  type PackagePurchasePaymentMethod,
   type TerminalAccountSummary
 } from "./clientAuth";
 import CheckoutModal from "./CheckoutModal";
-import { formatChallengeStatusLabel } from "./challengeUi";
+import LiveMarketBoard from "./LiveMarketBoard";
+import SiteFooter from "./SiteFooter";
+import PackageTermsExplorer from "./PackageTermsExplorer";
+import {
+  formatChallengeStatusLabel,
+  formatViolationCodeLabel,
+  formatViolationEvidenceKey,
+  formatViolationEvidenceValue
+} from "./challengeUi";
 import type { MarketingSubView } from "./marketingTypes";
+import { fetchChallengeTemplates, findTemplate, type ChallengeTemplateJson } from "./packageTerms";
+import { programs, programAddons } from "./programCatalog";
+
+const TWO_PHASE_VARIANTS_PORTAL: Array<{ label: string; templateId: string; drawdownLabel: string }> = [
+  { label: "Classic Static", templateId: "std-two-step", drawdownLabel: "Static" },
+  { label: "Standard Trailing", templateId: "preset-fxify-two-phase", drawdownLabel: "Static (FXIFY-style rails)" },
+  { label: "Pro Static", templateId: "preset-ftmo-two-phase", drawdownLabel: "Static (stricter conduct + news blackout)" }
+];
+
+function formatDeskSizeLabelPortal(usd: number): string {
+  if (usd >= 1000 && usd % 1000 === 0) return `$${usd / 1000}k`;
+  return `$${usd.toLocaleString()}`;
+}
 
 interface ClientPortalProps {
   accountId: string;
@@ -114,27 +136,16 @@ const FAMILY_BLURB: Record<PackageProgramFamily, string> = {
   HEURISTIC: "FTMO / FXIFY-flavoured rule packs for comparison testing."
 };
 
-function groupCatalogByFamily(catalog: PackageCatalogEntry[]): Array<{
-  family: PackageProgramFamily | "OTHER";
-  label: string;
-  blurb: string;
-  items: PackageCatalogEntry[];
-}> {
-  const buckets = new Map<string, PackageCatalogEntry[]>();
-  for (const c of catalog) {
-    const k = c.family ?? "OTHER";
-    if (!buckets.has(k)) buckets.set(k, []);
-    buckets.get(k)!.push(c);
-  }
-  const order: Array<PackageProgramFamily | "OTHER"> = [...FAMILY_ORDER, "OTHER"];
-  return order
-    .filter((f) => buckets.has(f))
-    .map((f) => ({
-      family: f,
-      label: f === "OTHER" ? "Other" : FAMILY_LABEL[f],
-      blurb: f === "OTHER" ? "" : FAMILY_BLURB[f],
-      items: (buckets.get(f) ?? []).sort((a, b) => a.simulatedBalanceUsd - b.simulatedBalanceUsd)
-    }));
+function drawdownLabelForCatalog(c: PackageCatalogEntry): string {
+  if (c.instantFundedPassthrough) return "Funded-first";
+  const id = c.templateId;
+  if (id.includes("fxify")) return "Static (FXIFY-style rails)";
+  if (id.includes("ftmo")) return "Static (stricter conduct + news blackout)";
+  if (id === "std-two-step") return "Classic static";
+  if (id === "prog-lightning") return "Sprint static";
+  if (id === "prog-three-cycle") return "Progressive static";
+  if (id === "prog-one-phase") return "Single-phase static";
+  return "Static (simulated)";
 }
 
 function generatePassword(len = 14): string {
@@ -174,22 +185,73 @@ export default function ClientPortal({ accountId, onBackHome, onOpenMarketingPag
   const [ticketTitle, setTicketTitle] = useState("");
   const [ticketBody, setTicketBody] = useState("");
   const [expandedSummaryId, setExpandedSummaryId] = useState<string | null>(null);
+  const [challengeTemplates, setChallengeTemplates] = useState<ChallengeTemplateJson[]>([]);
+  const [catalogFamily, setCatalogFamily] = useState<PackageProgramFamily>("TWO_PHASE");
+  const [catalogTwoPhaseVariant, setCatalogTwoPhaseVariant] = useState(0);
+  const [catalogSelectedSlug, setCatalogSelectedSlug] = useState<string | null>(null);
+
+  /** Catalog families that actually have at least one SKU. */
+  const availableFamilies = useMemo<PackageProgramFamily[]>(() => {
+    const present = new Set<PackageProgramFamily>();
+    for (const c of catalog) {
+      if (c.family) present.add(c.family);
+    }
+    return FAMILY_ORDER.filter((f) => present.has(f));
+  }, [catalog]);
+
+  /** Make sure the active family always has stock — fall back to the first available. */
+  useEffect(() => {
+    if (availableFamilies.length === 0) return;
+    if (!availableFamilies.includes(catalogFamily)) {
+      setCatalogFamily(availableFamilies[0]!);
+    }
+  }, [availableFamilies, catalogFamily]);
+
+  /** SKUs for the currently selected family + (for TWO_PHASE) the chosen drawdown variant. */
+  const familySkus = useMemo(() => {
+    const family = catalogFamily;
+    return catalog
+      .filter((row) => {
+        if (row.family !== family) return false;
+        if (family === "INSTANT_FUNDING") return !!row.instantFundedPassthrough;
+        if (row.instantFundedPassthrough) return false;
+        if (family === "TWO_PHASE") {
+          const tid = TWO_PHASE_VARIANTS_PORTAL[catalogTwoPhaseVariant]?.templateId;
+          return row.templateId === tid;
+        }
+        return true;
+      })
+      .sort((a, b) => a.simulatedBalanceUsd - b.simulatedBalanceUsd);
+  }, [catalog, catalogFamily, catalogTwoPhaseVariant]);
+
+  /** Auto-select the first balance pill whenever the SKU list changes. */
+  useEffect(() => {
+    const first = familySkus[0]?.slug ?? null;
+    setCatalogSelectedSlug(first);
+  }, [familySkus]);
+
+  const catalogSelectedSku = useMemo(
+    () => familySkus.find((s) => s.slug === catalogSelectedSlug) ?? familySkus[0] ?? null,
+    [familySkus, catalogSelectedSlug]
+  );
 
   const reload = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [t, ps, pkgs, p, pay, tk] = await Promise.all([
+      const [t, ps, pkgs, p, pay, tk, tmpl] = await Promise.all([
         apiListTerminalAccounts().catch(() => []),
         apiListPackageDashboardSummaries().catch(() => []),
         apiListPackageCatalog().catch(() => []),
         fetch(`${API_BASE}/client/profile`, { headers: bearerHeaders() }).then(async (r) => (r.ok ? (r.json() as Promise<ProfilePayload>) : null)),
         fetch(`${API_BASE}/payouts`, { headers: bearerHeaders() }).then(async (r) => (r.ok ? (r.json() as Promise<PayoutRequest[]>) : [])),
-        fetch(`${API_BASE}/client/support-tickets`, { headers: bearerHeaders() }).then(async (r) => (r.ok ? (r.json() as Promise<SupportTicketRow[]>) : []))
+        fetch(`${API_BASE}/client/support-tickets`, { headers: bearerHeaders() }).then(async (r) => (r.ok ? (r.json() as Promise<SupportTicketRow[]>) : [])),
+        fetchChallengeTemplates().catch(() => [] as ChallengeTemplateJson[])
       ]);
       setTerminals(t);
       setPackageSummaries(ps);
       setCatalog(pkgs);
+      setChallengeTemplates(tmpl);
       setProfile(p);
       setProfileDraft(p ?? {});
       setPayouts(pay);
@@ -211,10 +273,18 @@ export default function ClientPortal({ accountId, onBackHome, onOpenMarketingPag
   const totalEquity = useMemo(() => packageSummaries.reduce((s, p) => s + (p.equity || 0), 0), [packageSummaries]);
   const totalProfit = useMemo(() => packageSummaries.reduce((s, p) => s + (p.ledgerProfitUsd || 0), 0), [packageSummaries]);
 
-  async function handlePurchase(slug: string): Promise<void> {
-    const result = await apiPurchasePackage(slug);
+  async function handlePurchase(
+    slug: string,
+    detail?: { paymentMethod: PackagePurchasePaymentMethod; paymentReference?: string }
+  ): Promise<void> {
+    const result = await apiPurchasePackage(slug, detail);
+    const viaBank = detail?.paymentMethod === "BANK_TRANSFER";
     setFreshCreds(result.initialTerminal);
-    setSuccessBanner(`Package activated. Trading login ${result.initialTerminal.login} ready to use.`);
+    setSuccessBanner(
+      viaBank
+        ? `Package activated (bank transfer — demo unlocks immediately). Trading login ${result.initialTerminal.login} ready.`
+        : `Package activated. Trading login ${result.initialTerminal.login} ready to use.`
+    );
     await reload();
     setTab("trading-accounts");
   }
@@ -504,6 +574,13 @@ export default function ClientPortal({ accountId, onBackHome, onOpenMarketingPag
 
             <DesktopAppDownloadCard />
 
+            <LiveMarketBoard
+              variant="portal"
+              title="Live markets snapshot"
+              eyebrow="Live market data"
+              subtitle="Bid, mid, and ask for every instrument available in your trading terminal — refreshed automatically."
+            />
+
             {ownPackageCount === 0 ? (
               <div className="fxPortalEmptyHero">
                 <Package size={32} aria-hidden="true" />
@@ -560,6 +637,9 @@ export default function ClientPortal({ accountId, onBackHome, onOpenMarketingPag
                           <dd>${p.freeMargin.toFixed(2)}</dd>
                         </div>
                       </dl>
+                      {(p.challengeStatus === "BREACHED" || p.challengeStatus === "LOCKED") && (
+                        <PackageBreachReasonPanel summary={p} />
+                      )}
                       <button
                         type="button"
                         className="fxLinkBtn fxPortalPkgExpand"
@@ -737,65 +817,144 @@ export default function ClientPortal({ accountId, onBackHome, onOpenMarketingPag
         )}
 
         {tab === "catalog" && (
-          <section className="fxPortalSection">
+          <section className="fxPortalSection fxPortalCatalogV2">
             <header className="fxSectionHeaderRow">
               <div>
                 <p className="fxEyebrow">Catalog</p>
                 <h2 className="fxTitleContrast">Buy a trading package</h2>
                 <p className="fxPortalMuted">
-                  All public-site programs are available below. Each purchase issues its own numeric trading-account
-                  login and password — buy as many as you like.
+                  Pick a program family, choose a desk size, and review the full rule pack before checkout. Each
+                  purchase issues its own numeric trading-account login.
                 </p>
               </div>
               <span className="fxPortalChip">{catalog.length} packages</span>
             </header>
+
             {catalog.length === 0 ? (
               <p className="fxPortalMuted">Catalog is empty — try refreshing.</p>
+            ) : availableFamilies.length === 0 ? (
+              <p className="fxPortalMuted">No public program families available right now.</p>
             ) : (
-              <div className="fxPortalCatalogStack">
-                {groupCatalogByFamily(catalog).map((group) => (
-                  <div key={group.family} className="fxPortalCatalogGroup">
-                    <header className="fxPortalCatalogGroupHead">
-                      <div>
-                        <p className="fxEyebrow fxEyebrowLight">{group.label}</p>
-                        {group.blurb && <p className="fxPortalCatalogGroupBlurb">{group.blurb}</p>}
+              <>
+                <nav
+                  className="fxProgTabs fxProgTabsNumbered fxPortalCatalogTabs"
+                  role="tablist"
+                  aria-label="Program families"
+                >
+                  {availableFamilies.map((fam, i) => (
+                    <button
+                      key={fam}
+                      type="button"
+                      role="tab"
+                      aria-selected={catalogFamily === fam}
+                      className={`fxProgTab${catalogFamily === fam ? " fxProgTabActive" : ""}`}
+                      onClick={() => {
+                        setCatalogFamily(fam);
+                        if (fam !== "TWO_PHASE") setCatalogTwoPhaseVariant(0);
+                      }}
+                    >
+                      <span className="fxProgTabNum">{i + 1}</span>
+                      {FAMILY_LABEL[fam]}
+                    </button>
+                  ))}
+                </nav>
+
+                <section className="fxProgDetail fxPortalCatalogDetail">
+                  <header className="fxProgDetailHead">
+                    <p className="fxEyebrow fxEyebrowLight">{FAMILY_LABEL[catalogFamily]}</p>
+                    <h2 className="fxProgDetailTitle">
+                      {programs[catalogFamily as keyof typeof programs]?.audience ??
+                        FAMILY_BLURB[catalogFamily]}
+                    </h2>
+                    <p className="fxProgDetailIntro">
+                      {programs[catalogFamily as keyof typeof programs]?.intro ?? FAMILY_BLURB[catalogFamily]}
+                    </p>
+                  </header>
+
+                  {catalogFamily === "TWO_PHASE" && (
+                    <div className="fxProgPickerRow">
+                      <div className="fxProgVariantGroup" role="group" aria-label="Drawdown profile">
+                        {TWO_PHASE_VARIANTS_PORTAL.map((v, idx) => (
+                          <button
+                            key={v.templateId}
+                            type="button"
+                            className={`fxProgVariantChip${
+                              catalogTwoPhaseVariant === idx ? " fxProgVariantChipActive" : ""
+                            }`}
+                            onClick={() => setCatalogTwoPhaseVariant(idx)}
+                          >
+                            {v.label}
+                          </button>
+                        ))}
                       </div>
-                      <span className="fxPortalCatalogGroupCount">{group.items.length} tiers</span>
-                    </header>
-                    <div className="fxPortalCatalogGrid">
-                      {group.items.map((c) => (
-                        <article key={c.slug} className="fxPortalCatalogCard">
-                          <p className="fxPortalCatalogTier">${c.simulatedBalanceUsd.toLocaleString()} desk</p>
-                          <h3 className="fxPortalCatalogTitle">{c.packageTypeLabel}</h3>
-                          {c.tagline && <p className="fxPortalCatalogTagline">{c.tagline}</p>}
-                          <ul className="fxPortalCatalogSpecs">
-                            <li>
-                              <span>Simulated balance</span>
-                              <strong>${c.simulatedBalanceUsd.toLocaleString()}</strong>
-                            </li>
-                            <li>
-                              <span>Type</span>
-                              <strong>{c.instantFundedPassthrough ? "Instant funded" : "Evaluation"}</strong>
-                            </li>
-                            <li>
-                              <span>Template</span>
-                              <strong>
-                                <code className="fxPortalCode">{c.templateId}</code>
-                              </strong>
-                            </li>
-                          </ul>
-                          <div className="fxPortalCatalogFoot">
-                            <p className="fxPortalCatalogPrice">${c.priceUsd.toFixed(0)}</p>
-                            <button type="button" className="fxCtaFilled" onClick={() => setPendingCheckoutPkg(c)}>
-                              Buy now <ArrowRight size={14} aria-hidden="true" />
-                            </button>
-                          </div>
-                        </article>
-                      ))}
                     </div>
+                  )}
+
+                  <div className="fxProgBalanceRow" role="tablist" aria-label="Account size">
+                    {familySkus.length === 0 ? (
+                      <p className="fxPortalMuted">No tiers available for this selection.</p>
+                    ) : (
+                      familySkus.map((row) => (
+                        <button
+                          key={row.slug}
+                          type="button"
+                          role="tab"
+                          aria-selected={catalogSelectedSku?.slug === row.slug}
+                          className={`fxProgBalancePill${
+                            catalogSelectedSku?.slug === row.slug ? " fxProgBalancePillActive" : ""
+                          }`}
+                          onClick={() => setCatalogSelectedSlug(row.slug)}
+                        >
+                          {formatDeskSizeLabelPortal(row.simulatedBalanceUsd)}
+                        </button>
+                      ))
+                    )}
                   </div>
-                ))}
-              </div>
+
+                  {catalogSelectedSku && (
+                    <PackageTermsExplorer
+                      template={findTemplate(challengeTemplates, catalogSelectedSku.templateId)}
+                      balanceUsd={catalogSelectedSku.simulatedBalanceUsd}
+                      priceUsd={catalogSelectedSku.priceUsd}
+                      programTitle={`${availableFamilies.indexOf(catalogFamily) + 1} ${FAMILY_LABEL[catalogFamily]}`}
+                      programSubtitle={
+                        catalogSelectedSku.tagline ??
+                        `${
+                          catalogSelectedSku.instantFundedPassthrough ? "Instant funded" : "Evaluation"
+                        } · template ${catalogSelectedSku.templateId}`
+                      }
+                      audienceBadge={
+                        programs[catalogFamily as keyof typeof programs]?.audience.split(".")[0]?.slice(0, 42)
+                      }
+                      instantFunded={!!catalogSelectedSku.instantFundedPassthrough}
+                      drawdownTypeLabel={
+                        catalogFamily === "TWO_PHASE"
+                          ? TWO_PHASE_VARIANTS_PORTAL[catalogTwoPhaseVariant]?.drawdownLabel ?? "Static"
+                          : drawdownLabelForCatalog(catalogSelectedSku)
+                      }
+                      onPrimaryCta={() => setPendingCheckoutPkg(catalogSelectedSku)}
+                      primaryCtaLabel="Buy now"
+                      showPromoBanner={false}
+                      density="full"
+                    />
+                  )}
+                </section>
+
+                <section className="fxSection fxSectionMuted fxPortalCatalogAddons">
+                  <header className="fxSectionHeader">
+                    <p className="fxEyebrow">Optional addons</p>
+                    <h2 className="fxSectionTitle">Tune your evaluation at checkout</h2>
+                  </header>
+                  <div className="fxAddonGrid">
+                    {programAddons.map((a) => (
+                      <article key={a.title} className="fxAddonCard">
+                        <h3>{a.title}</h3>
+                        <p>{a.description}</p>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              </>
             )}
           </section>
         )}
@@ -1072,31 +1231,96 @@ export default function ClientPortal({ accountId, onBackHome, onOpenMarketingPag
           </section>
         )}
 
-        <footer className="fxFooterGrid fxFooterTight">
-          <div>
-            <strong className="fxFooterBrand">PropPrime Client Portal</strong>
-            <p className="fxFooterMuted">
-              Educational simulation — every dollar shown here is simulated. Trader account id{" "}
-              <code className="fxPortalCode">{accountId}</code>.
-            </p>
-          </div>
-          <div className="fxFooterCols fxFooterColsSingle">
-            <button type="button" className="fxFooterLink fxFooterBtnAsLink" onClick={onBackHome}>Back to marketing site</button>
-            <button type="button" className="fxFooterLink fxFooterBtnAsLink" onClick={onOpenTerminal}>Open trading terminal</button>
-          </div>
-        </footer>
+        <div className="fxPortalQuickNav" aria-label="Quick portal links">
+          <button type="button" className="fxLinkBtn" onClick={onBackHome}>
+            ← Back to marketing site
+          </button>
+          <button type="button" className="fxLinkBtn" onClick={onOpenTerminal}>
+            Open trading terminal →
+          </button>
+        </div>
       </main>
+
+      <SiteFooter
+        onNavigate={onOpenMarketingPage}
+        onOpenPortal={onBackHome}
+        variant="portal"
+        brandSubline={`Educational simulation — trader account id ${accountId}.`}
+      />
 
       {pendingCheckoutPkg && (
         <CheckoutModal
           pkg={pendingCheckoutPkg}
           onClose={() => setPendingCheckoutPkg(null)}
-          onConfirm={async (slug) => {
-            await handlePurchase(slug);
+          onConfirm={async (slug, detail) => {
+            await handlePurchase(slug, detail);
             setPendingCheckoutPkg(null);
           }}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * In-card panel shown for any package whose evaluation has been BREACHED
+ * (HARD_BREACH violation) or LOCKED (RULE_FREEZE). Pulls the API-provided
+ * `breachReason` (server picks the most recent matching ViolationRecord)
+ * and renders a friendly trader-facing reason, message, time, and the
+ * supporting evidence bag. If the API didn't include a reason for some
+ * legacy account row we fall back to a generic "no record on file" hint.
+ */
+function PackageBreachReasonPanel({ summary }: { summary: PackageDashboardSummary }) {
+  const isLocked = summary.challengeStatus === "LOCKED";
+  const reason = summary.breachReason;
+  const headingLabel = isLocked ? "Account locked" : "Account breached";
+  const headingHelp = isLocked
+    ? "Trading is paused on this desk until the issue below is reviewed."
+    : "This evaluation has failed because of the rule below.";
+  const evidenceEntries = reason
+    ? Object.entries(reason.evidence).filter(([, v]) => v !== null && v !== undefined && v !== "")
+    : [];
+
+  return (
+    <div
+      className={`fxPortalBreachPanel ${isLocked ? "fxPortalBreachPanelLocked" : "fxPortalBreachPanelBreached"}`}
+      role="alert"
+    >
+      <div className="fxPortalBreachIcon">
+        <AlertTriangle size={18} aria-hidden="true" />
+      </div>
+      <div className="fxPortalBreachBody">
+        <p className="fxPortalBreachHead">
+          <strong>{headingLabel}</strong>
+          {summary.violatedAt && (
+            <span className="fxPortalBreachTime"> · {new Date(summary.violatedAt).toLocaleString()}</span>
+          )}
+        </p>
+        <p className="fxPortalBreachHelp">{headingHelp}</p>
+        {reason ? (
+          <>
+            <p className="fxPortalBreachReason">
+              <span className="fxPortalBreachCode">{formatViolationCodeLabel(reason.code)}</span>
+              <span className="fxPortalBreachSep">·</span>
+              <span className="fxPortalBreachMsg">{reason.message}</span>
+            </p>
+            {evidenceEntries.length > 0 && (
+              <dl className="fxPortalBreachEvidence">
+                {evidenceEntries.slice(0, 6).map(([k, v]) => (
+                  <div key={k}>
+                    <dt>{formatViolationEvidenceKey(k)}</dt>
+                    <dd>{formatViolationEvidenceValue(k, v)}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </>
+        ) : (
+          <p className="fxPortalBreachReason fxPortalBreachReasonMuted">
+            No specific rule record on file for this desk. Open a support ticket to request a review.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

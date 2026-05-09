@@ -1,6 +1,7 @@
 import { Activity, ArrowRight, BadgeDollarSign, BookOpen, Layers, ShieldCheck, Sparkles, Target, TrendingUp, Wallet } from "lucide-react";
 import MarketingShell from "./MarketingShell";
 import MarketingHeroVisual from "./MarketingHeroVisual";
+import LiveMarketBoard from "./LiveMarketBoard";
 import type { MarketingSubView } from "./marketingTypes";
 import { brokerStyleFeatures, faqTopFive, programs, programTabOrder } from "./programCatalog";
 
@@ -87,6 +88,13 @@ export default function WebsiteHome({ onNavigate, onOpenPortal }: WebsiteHomePro
           })}
         </div>
       </section>
+
+      <LiveMarketBoard
+        variant="marketing"
+        title="Live FX, crypto & commodities"
+        eyebrow="Live market data"
+        subtitle="Major pairs, crypto, spot metals, and crude — the same family of symbols available in the trading terminal."
+      />
 
       <section className="fxSection fxSectionMuted">
         <header className="fxSectionHeader">
