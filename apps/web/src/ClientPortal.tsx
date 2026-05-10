@@ -425,25 +425,31 @@ export default function ClientPortal({ accountId, onBackHome, onOpenMarketingPag
       </div>
 
       <header className="fxShellNav">
-        <div className="fxShellNavInner">
+        <div className="fxShellNavInner fxPortalShellInner">
           <button type="button" className="fxLogoBtn" onClick={onBackHome}>
             <div className="fxLogoRow">
               <span className="fxLogoMark" aria-hidden="true" />
               <strong className="fxLogoWord">PropPrime</strong>
             </div>
           </button>
-          <nav className="fxNavCenter" aria-label="Portal">
-            <span className="fxNavLink fxNavLinkActive">Client portal</span>
-          </nav>
-          <div className="fxNavActions">
-            <button type="button" className="fxLinkBtn" onClick={() => onOpenMarketingPage("programs")}>Programs</button>
-            <button type="button" className="fxLinkBtn" onClick={() => onOpenMarketingPage("payouts")}>Payouts</button>
-            <button type="button" className="fxCtaOutline" onClick={onOpenTerminal}>
-              <Terminal size={14} aria-hidden="true" /> Open terminal
-            </button>
-            <button type="button" className="fxCtaFilled fxPortalLogout" onClick={onLogout}>
-              <LogOut size={14} aria-hidden="true" /> Sign out
-            </button>
+          <div className="fxPortalHeaderCluster">
+            <nav className="fxNavCenter fxPortalHeaderNav" aria-label="Portal">
+              <span className="fxNavLink fxNavLinkActive">Client portal</span>
+            </nav>
+            <div className="fxNavActions fxPortalHeaderActions">
+              <button type="button" className="fxLinkBtn" onClick={() => onOpenMarketingPage("programs")}>
+                Programs
+              </button>
+              <button type="button" className="fxLinkBtn" onClick={() => onOpenMarketingPage("payouts")}>
+                Payouts
+              </button>
+              <button type="button" className="fxCtaOutline" onClick={onOpenTerminal}>
+                <Terminal size={14} aria-hidden="true" /> Open terminal
+              </button>
+              <button type="button" className="fxCtaFilled fxPortalLogout" onClick={onLogout}>
+                <LogOut size={14} aria-hidden="true" /> Sign out
+              </button>
+            </div>
           </div>
         </div>
       </header>

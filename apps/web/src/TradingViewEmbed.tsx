@@ -10,13 +10,15 @@ function TradingViewEmbed({ symbol }: TradingViewEmbedProps) {
     `&hideideas=1&saveimage=1&toolbarbg=111b31&hide_top_toolbar=0&allow_symbol_change=1`;
 
   return (
-    <iframe
-      title="TradingView Chart"
-      src={url}
-      className="tvIframe"
-      allowTransparency
-      frameBorder={0}
-    />
+    <div className="tvEmbedShell">
+      <iframe
+        title="TradingView Chart"
+        src={url}
+        className="tvIframe"
+        allowTransparency
+        frameBorder={0}
+      />
+    </div>
   );
 }
 

@@ -3,7 +3,20 @@ import type { AccountState, ChallengeProgress, ForexSymbol, Order, Position, Pri
 import { symbolPipSize, symbolRetailMarketSession } from "@paper-trader/shared";
 import { formatChallengeStatusLabel } from "./challengeUi";
 import type { UTCTimestamp } from "lightweight-charts";
-import { CandlestickChart, ChartColumn, ChartLine, Crosshair, MoveHorizontal, MoveVertical, TrendingUp } from "lucide-react";
+import {
+  BadgeDollarSign,
+  BarChart3,
+  CandlestickChart,
+  ChartColumn,
+  ChartLine,
+  Crosshair,
+  Layers,
+  List,
+  MoveHorizontal,
+  MoveVertical,
+  TrendingUp,
+  Wallet
+} from "lucide-react";
 import ChartPanel from "./ChartPanel";
 import TradingViewEmbed from "./TradingViewEmbed";
 import TraderDashboard from "./TraderDashboard";
@@ -86,7 +99,18 @@ const symbols: ForexSymbol[] = [
 ];
 type Timeframe = "1s" | "5s" | "15s" | "30s" | "1m" | "5m" | "15m" | "30m" | "1h" | "4h" | "1d" | "1w" | "1mo";
 type Candle = { time: UTCTimestamp; open: number; high: number; low: number; close: number };
-type TerminalTab = "trade" | "history" | "news" | "alerts";
+type TerminalTab = "trade" | "ticket" | "history" | "news" | "alerts";
+/** Bottom-dock sections when the web terminal is in narrow (phone) layout. */
+type TerminalMobilePane = "chart" | "watch" | "trade" | "book" | "account";
+type MobileBookSubTab = "pending" | "bulk";
+
+const TERMINAL_TAB_LABELS: Record<TerminalTab, string> = {
+  trade: "Trade",
+  ticket: "Open ticket",
+  history: "History",
+  news: "News",
+  alerts: "Alerts"
+};
 type TopMenu = "file" | "view" | null;
 interface CalendarEvent {
   id: string;
@@ -1007,6 +1031,23 @@ function App() {
   /** Re-render when SPA hash routes change (operator URLs). */
   const [hashEpoch, setHashEpoch] = useState(0);
 
+  const [terminalNarrow, setTerminalNarrow] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches
+  );
+  const [terminalMobilePane, setTerminalMobilePane] = useState<TerminalMobilePane>("chart");
+  const [mobileBookSubTab, setMobileBookSubTab] = useState<MobileBookSubTab>("pending");
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 900px)");
+    function apply(): void {
+      setTerminalNarrow(mq.matches);
+    }
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+
   const hoveredTimeLabel = useMemo(() => (hoveredChartTime ? new Date(hoveredChartTime * 1000).toLocaleString() : "-"), [hoveredChartTime]);
 
   const opsRoute = useMemo(() => {
@@ -1626,7 +1667,35 @@ function App() {
   }, [dragMode]);
 
   const topTools = ["Insert", "Charts", "Tools", "Window", "Help"];
-  const terminalTabs: TerminalTab[] = ["trade", "history", "news", "alerts"];
+  const terminalTabs: TerminalTab[] = ["trade", "ticket", "history", "news", "alerts"];
+
+  const terminalMobileDockClass = terminalNarrow
+    ? `fxTerminalRoot--mobile fxTerminalRoot--pane-${terminalMobilePane}`
+    : "";
+
+  const terminalBodyGridStyle: React.CSSProperties | undefined = terminalNarrow
+    ? undefined
+    : showToolbox
+      ? { gridTemplateRows: `${100 - terminalPct}% 6px ${terminalPct}%` }
+      : { gridTemplateRows: "100%" };
+
+  /** On phone layout, the bottom toolbox is only for Trade and Book panes (Watch stays list-only). Desktop follows View → Toolbox. */
+  const showTerminalDockPanel = terminalNarrow
+    ? terminalMobilePane === "trade" || terminalMobilePane === "book"
+    : showToolbox;
+
+  useEffect(() => {
+    if (terminalTab !== "ticket") return;
+    queueMicrotask(() =>
+      document.getElementById("fx-order-ticket-anchor")?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest"
+      })
+    );
+  }, [terminalTab, terminalMobilePane, terminalNarrow]);
+
+  const toolboxIsMobileBook = terminalNarrow && terminalMobilePane === "book";
+  const toolboxIsMobileTrade = terminalNarrow && terminalMobilePane === "trade";
 
   const handlePortalLogin = useCallback(async (username: string, password: string, options?: { rememberDevice?: boolean }) => {
     const { token, user } = await apiLogin(username, password);
@@ -1951,8 +2020,8 @@ function App() {
   }
 
   return (
-    <main className="fxTerminalRoot">
-      <header className="fxTerminalTopBar" role="banner">
+    <main className={`fxTerminalRoot ${terminalMobileDockClass}`.trim()}>
+      <header className={`fxTerminalTopBar${terminalNarrow ? " fxTerminalTopBar--narrow" : ""}`} role="banner">
         <button type="button" className="fxTermLogoBtn" onClick={openMarketingHome} title="Back to marketing site">
           <span className="fxLogoMark fxTermLogoMark" aria-hidden="true" />
           <span className="fxTermLogoTxt">PropPrime</span>
@@ -2007,11 +2076,14 @@ function App() {
         </div>
 
         <span className="fxTermTopSpacer" aria-hidden="true" />
-        {topTools.map((t) => (
-          <button key={t} type="button" className="fxTermGhostBtn" onClick={() => placeholderFeature(t)}>{t}</button>
-        ))}
+        {!terminalNarrow &&
+          topTools.map((t) => (
+            <button key={t} type="button" className="fxTermGhostBtn" onClick={() => placeholderFeature(t)}>
+              {t}
+            </button>
+          ))}
         <nav
-          className={`fxTermQuickNav${isClientAuthed ? " fxTermQuickNav--client" : ""}`}
+          className={`fxTermQuickNav${isClientAuthed ? " fxTermQuickNav--client" : ""}${terminalNarrow ? " fxTermQuickNav--narrow" : ""}`}
           aria-label={isClientAuthed ? "Workspace" : "Developer & workspace"}
         >
           <button type="button" className="fxTermPill fxTermPillMuted" onClick={openMarketingHome}>
@@ -2073,11 +2145,7 @@ function App() {
         </nav>
       </header>
 
-      <section
-        className="bodyArea fxTerminalBody"
-        ref={bodyRef}
-        style={showToolbox ? { gridTemplateRows: `${100 - terminalPct}% 6px ${terminalPct}%` } : { gridTemplateRows: "100%" }}
-      >
+      <section className="bodyArea fxTerminalBody" ref={bodyRef} style={terminalBodyGridStyle}>
       <section className="workspaceRow" style={{ gridTemplateColumns: `${leftPanePct}% 6px ${100 - leftPanePct}%` }}>
         <aside className="leftPane">
           {showMarketWatch && (
@@ -2091,7 +2159,7 @@ function App() {
               onRemove={removeWatched}
             />
           )}
-          <article className="panel resizablePanel fxOrderTicket">
+          <article className="panel resizablePanel fxOrderTicket" id="fx-order-ticket-anchor">
             <header className="fxPosPanel__head">
               <h3>Order Ticket</h3>
               <span className="fxOrderTicket__sym">{selected}</span>
@@ -2396,189 +2464,385 @@ function App() {
         </section>
       </section>
 
-      {showToolbox && <div className="splitter horizontal" onMouseDown={() => setDragMode("terminal")} />}
+      {showTerminalDockPanel && <div className="splitter horizontal" onMouseDown={() => setDragMode("terminal")} />}
 
-      {showToolbox && <section className="terminalArea">
-        <div className="terminalTabs">
-          {terminalTabs.map((tab) => (
-            <button key={tab} className={terminalTab === tab ? "tabBtn active" : "tabBtn"} onClick={() => setTerminalTab(tab)}>
-              {tab.toUpperCase()}
-            </button>
-          ))}
-        </div>
+      {showTerminalDockPanel && (
+        <section className="terminalArea">
+          {toolboxIsMobileBook ? (
+            <div className="terminalTabs fxMobileBookTabs" role="tablist" aria-label="Order book">
+              <button
+                type="button"
+                className={mobileBookSubTab === "pending" ? "tabBtn active" : "tabBtn"}
+                onClick={() => setMobileBookSubTab("pending")}
+              >
+                Pending orders
+              </button>
+              <button
+                type="button"
+                className={mobileBookSubTab === "bulk" ? "tabBtn active" : "tabBtn"}
+                onClick={() => setMobileBookSubTab("bulk")}
+              >
+                Bulk actions
+              </button>
+            </div>
+          ) : (
+            <div className="terminalTabs" role="tablist" aria-label="Trading toolbox">
+              {terminalTabs.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={terminalTab === tab ? "tabBtn active" : "tabBtn"}
+                  onClick={() => setTerminalTab(tab)}
+                >
+                  {TERMINAL_TAB_LABELS[tab].toUpperCase()}
+                </button>
+              ))}
+            </div>
+          )}
 
-        {terminalTab === "trade" && (
-          <div className="tradeGrid">
-            <article className="panel panelScroll resizablePanel fxPosPanel">
-              <header className="fxPosPanel__head">
-                <h3>Open Positions</h3>
-                <span className="fxPosPanel__count">{positions.length}</span>
-              </header>
-              {positions.length === 0 && (
-                <p className="fxPosEmpty">No open positions.</p>
-              )}
-              <div className="fxPosList">
-                {positions.map((p) => (
-                  <PositionCard
-                    key={p.id}
-                    position={p}
-                    livePrice={prices[p.symbol]}
-                    onClose={(id, lot) => void closePosition(id, lot)}
-                    onUpdate={(id, sl, tp) => updatePosition(id, sl, tp)}
-                  />
-                ))}
-              </div>
-            </article>
-            <article className="panel panelScroll resizablePanel fxPosPanel">
-              <header className="fxPosPanel__head">
-                <h3>Pending Orders</h3>
-                <span className="fxPosPanel__count">{pendingOrders.length}</span>
-              </header>
+          {toolboxIsMobileBook && mobileBookSubTab === "pending" && (
+            <div className="tradeGrid tradeGrid--bookSingle">
+              <article className="panel panelScroll resizablePanel fxPosPanel">
+                <header className="fxPosPanel__head">
+                  <h3>Pending Orders</h3>
+                  <span className="fxPosPanel__count">{pendingOrders.length}</span>
+                </header>
 
-              <div className="fxPendingLimitForm" aria-label="Place limit order">
-                <div className="fxPendingLimitForm__title">Place limit order</div>
-                <p className="fxPendingLimitForm__sym">
-                  <strong>{selected}</strong>
-                  {selectedPrice ? (
-                    <>
-                      {" "}
-                      · Bid <span className="fxPendingLimitForm__bid">{formatForSymbol(selected, selectedPrice.bid)}</span> · Ask{" "}
-                      <span className="fxPendingLimitForm__ask">{formatForSymbol(selected, selectedPrice.ask)}</span>
-                    </>
-                  ) : (
-                    <span className="fxPendingLimitForm__muted"> · waiting for quote…</span>
-                  )}
-                </p>
-                <div className="fxPendingLimitForm__row">
-                  <label className="fxPendingLimitForm__field">
-                    <span>Limit price</span>
+                <div className="fxPendingLimitForm" aria-label="Place limit order">
+                  <div className="fxPendingLimitForm__title">Place limit order</div>
+                  <p className="fxPendingLimitForm__sym">
+                    <strong>{selected}</strong>
+                    {selectedPrice ? (
+                      <>
+                        {" "}
+                        · Bid <span className="fxPendingLimitForm__bid">{formatForSymbol(selected, selectedPrice.bid)}</span> · Ask{" "}
+                        <span className="fxPendingLimitForm__ask">{formatForSymbol(selected, selectedPrice.ask)}</span>
+                      </>
+                    ) : (
+                      <span className="fxPendingLimitForm__muted"> · waiting for quote…</span>
+                    )}
+                  </p>
+                  <div className="fxPendingLimitForm__row">
+                    <label className="fxPendingLimitForm__field">
+                      <span>Limit price</span>
+                      <input
+                        type="number"
+                        className="fxTerminalFieldInput"
+                        step={stepForSymbol(selected)}
+                        value={tradePanelLimitPrice}
+                        onChange={(e) => setTradePanelLimitPrice(e.target.value)}
+                        placeholder="Price"
+                      />
+                    </label>
+                    <label className="fxPendingLimitForm__field">
+                      <span>Lot</span>
+                      <input
+                        type="number"
+                        className="fxTerminalFieldInput"
+                        min={0.01}
+                        step={0.01}
+                        value={lotSize}
+                        onChange={(e) => {
+                          const v = Number(e.target.value);
+                          setLotSize(Number.isFinite(v) && v > 0 ? v : 0.01);
+                        }}
+                      />
+                    </label>
+                  </div>
+                  <div className="fxPendingLimitForm__row">
+                    <label className="fxPendingLimitForm__field">
+                      <span className="fxPendingLimitForm__slLabel">Stop loss</span>
+                      <input
+                        type="number"
+                        className="fxTerminalFieldInput"
+                        step={stepForSymbol(selected)}
+                        value={tradePanelLimitSl}
+                        onChange={(e) => setTradePanelLimitSl(e.target.value)}
+                        placeholder="Optional"
+                      />
+                    </label>
+                    <label className="fxPendingLimitForm__field">
+                      <span className="fxPendingLimitForm__tpLabel">Take profit</span>
+                      <input
+                        type="number"
+                        className="fxTerminalFieldInput"
+                        step={stepForSymbol(selected)}
+                        value={tradePanelLimitTp}
+                        onChange={(e) => setTradePanelLimitTp(e.target.value)}
+                        placeholder="Optional"
+                      />
+                    </label>
+                  </div>
+                  <div className="fxPendingLimitForm__actions">
+                    <button
+                      type="button"
+                      className="fxPosBtn fxPendingLimitForm__buy"
+                      disabled={limitPanelBusy || !retailSessionSelected.tradeable}
+                      title={retailSessionSelected.tradeable ? undefined : retailSessionSelected.reason}
+                      onClick={() => void placeTradePanelLimit("BUY")}
+                    >
+                      Buy limit
+                    </button>
+                    <button
+                      type="button"
+                      className="fxPosBtn fxPendingLimitForm__sell"
+                      disabled={limitPanelBusy || !retailSessionSelected.tradeable}
+                      title={retailSessionSelected.tradeable ? undefined : retailSessionSelected.reason}
+                      onClick={() => void placeTradePanelLimit("SELL")}
+                    >
+                      Sell limit
+                    </button>
+                  </div>
+                </div>
+
+                {pendingOrders.length === 0 && (
+                  <p className="fxPosEmpty">No pending orders.</p>
+                )}
+                <div className="fxPosList">
+                  {pendingOrders.map((o) => (
+                    <PendingOrderCard key={o.id} order={o} onCancel={(id) => void cancelPending(id)} />
+                  ))}
+                </div>
+              </article>
+            </div>
+          )}
+
+          {toolboxIsMobileBook && mobileBookSubTab === "bulk" && (
+            <div className="tradeGrid tradeGrid--bookSingle">
+              <article className="panel panelScroll resizablePanel fxPosPanel fxBulkPanel">
+                <header className="fxPosPanel__head">
+                  <h3>Bulk Actions</h3>
+                </header>
+                <div className="fxBulkPanel__inputs">
+                  <label className="fxBulkPanel__field">
+                    <span>Bulk SL</span>
                     <input
                       type="number"
                       className="fxTerminalFieldInput"
-                      step={stepForSymbol(selected)}
-                      value={tradePanelLimitPrice}
-                      onChange={(e) => setTradePanelLimitPrice(e.target.value)}
-                      placeholder="Price"
+                      placeholder="Bulk SL"
+                      value={bulkStopLoss}
+                      onChange={(e) => setBulkStopLoss(e.target.value)}
                     />
                   </label>
-                  <label className="fxPendingLimitForm__field">
-                    <span>Lot</span>
+                  <label className="fxBulkPanel__field">
+                    <span>Bulk TP</span>
                     <input
                       type="number"
                       className="fxTerminalFieldInput"
-                      min={0.01}
-                      step={0.01}
-                      value={lotSize}
-                      onChange={(e) => {
-                        const v = Number(e.target.value);
-                        setLotSize(Number.isFinite(v) && v > 0 ? v : 0.01);
-                      }}
+                      placeholder="Bulk TP"
+                      value={bulkTakeProfit}
+                      onChange={(e) => setBulkTakeProfit(e.target.value)}
                     />
                   </label>
                 </div>
-                <div className="fxPendingLimitForm__row">
-                  <label className="fxPendingLimitForm__field">
-                    <span className="fxPendingLimitForm__slLabel">Stop loss</span>
-                    <input
-                      type="number"
-                      className="fxTerminalFieldInput"
-                      step={stepForSymbol(selected)}
-                      value={tradePanelLimitSl}
-                      onChange={(e) => setTradePanelLimitSl(e.target.value)}
-                      placeholder="Optional"
-                    />
-                  </label>
-                  <label className="fxPendingLimitForm__field">
-                    <span className="fxPendingLimitForm__tpLabel">Take profit</span>
-                    <input
-                      type="number"
-                      className="fxTerminalFieldInput"
-                      step={stepForSymbol(selected)}
-                      value={tradePanelLimitTp}
-                      onChange={(e) => setTradePanelLimitTp(e.target.value)}
-                      placeholder="Optional"
-                    />
-                  </label>
-                </div>
-                <div className="fxPendingLimitForm__actions">
-                  <button
-                    type="button"
-                    className="fxPosBtn fxPendingLimitForm__buy"
-                    disabled={limitPanelBusy || !retailSessionSelected.tradeable}
-                    title={retailSessionSelected.tradeable ? undefined : retailSessionSelected.reason}
-                    onClick={() => void placeTradePanelLimit("BUY")}
-                  >
-                    Buy limit
+                <div className="fxBulkPanel__actions">
+                  <button type="button" className="fxPosBtn" onClick={() => void bulkModify("all")}>
+                    Modify All
                   </button>
-                  <button
-                    type="button"
-                    className="fxPosBtn fxPendingLimitForm__sell"
-                    disabled={limitPanelBusy || !retailSessionSelected.tradeable}
-                    title={retailSessionSelected.tradeable ? undefined : retailSessionSelected.reason}
-                    onClick={() => void placeTradePanelLimit("SELL")}
-                  >
-                    Sell limit
+                  <button type="button" className="fxPosBtn" onClick={() => void bulkModify("selected-symbol")}>
+                    Modify {selected}
+                  </button>
+                  <button type="button" className="fxPosBtn" onClick={() => void bulkClose("all")}>
+                    Close All
+                  </button>
+                  <button type="button" className="fxPosBtn" onClick={() => void bulkClose("losing")}>
+                    Close Losing
+                  </button>
+                  <button type="button" className="fxPosBtn" onClick={() => void bulkClose("profitable")}>
+                    Close Winners
                   </button>
                 </div>
-              </div>
+              </article>
+            </div>
+          )}
 
-              {pendingOrders.length === 0 && (
-                <p className="fxPosEmpty">No pending orders.</p>
+          {!toolboxIsMobileBook && terminalTab === "trade" && (
+            <div className={toolboxIsMobileTrade ? "tradeGrid tradeGrid--narrowTrade" : "tradeGrid"}>
+              <article className="panel panelScroll resizablePanel fxPosPanel">
+                <header className="fxPosPanel__head">
+                  <h3>Open Positions</h3>
+                  <span className="fxPosPanel__count">{positions.length}</span>
+                </header>
+                {positions.length === 0 && (
+                  <p className="fxPosEmpty">No open positions.</p>
+                )}
+                <div className="fxPosList">
+                  {positions.map((p) => (
+                    <PositionCard
+                      key={p.id}
+                      position={p}
+                      livePrice={prices[p.symbol]}
+                      onClose={(id, lot) => void closePosition(id, lot)}
+                      onUpdate={(id, sl, tp) => updatePosition(id, sl, tp)}
+                    />
+                  ))}
+                </div>
+              </article>
+              {!toolboxIsMobileTrade && (
+                <>
+                  <article className="panel panelScroll resizablePanel fxPosPanel">
+                    <header className="fxPosPanel__head">
+                      <h3>Pending Orders</h3>
+                      <span className="fxPosPanel__count">{pendingOrders.length}</span>
+                    </header>
+
+                    <div className="fxPendingLimitForm" aria-label="Place limit order">
+                      <div className="fxPendingLimitForm__title">Place limit order</div>
+                      <p className="fxPendingLimitForm__sym">
+                        <strong>{selected}</strong>
+                        {selectedPrice ? (
+                          <>
+                            {" "}
+                            · Bid <span className="fxPendingLimitForm__bid">{formatForSymbol(selected, selectedPrice.bid)}</span> · Ask{" "}
+                            <span className="fxPendingLimitForm__ask">{formatForSymbol(selected, selectedPrice.ask)}</span>
+                          </>
+                        ) : (
+                          <span className="fxPendingLimitForm__muted"> · waiting for quote…</span>
+                        )}
+                      </p>
+                      <div className="fxPendingLimitForm__row">
+                        <label className="fxPendingLimitForm__field">
+                          <span>Limit price</span>
+                          <input
+                            type="number"
+                            className="fxTerminalFieldInput"
+                            step={stepForSymbol(selected)}
+                            value={tradePanelLimitPrice}
+                            onChange={(e) => setTradePanelLimitPrice(e.target.value)}
+                            placeholder="Price"
+                          />
+                        </label>
+                        <label className="fxPendingLimitForm__field">
+                          <span>Lot</span>
+                          <input
+                            type="number"
+                            className="fxTerminalFieldInput"
+                            min={0.01}
+                            step={0.01}
+                            value={lotSize}
+                            onChange={(e) => {
+                              const v = Number(e.target.value);
+                              setLotSize(Number.isFinite(v) && v > 0 ? v : 0.01);
+                            }}
+                          />
+                        </label>
+                      </div>
+                      <div className="fxPendingLimitForm__row">
+                        <label className="fxPendingLimitForm__field">
+                          <span className="fxPendingLimitForm__slLabel">Stop loss</span>
+                          <input
+                            type="number"
+                            className="fxTerminalFieldInput"
+                            step={stepForSymbol(selected)}
+                            value={tradePanelLimitSl}
+                            onChange={(e) => setTradePanelLimitSl(e.target.value)}
+                            placeholder="Optional"
+                          />
+                        </label>
+                        <label className="fxPendingLimitForm__field">
+                          <span className="fxPendingLimitForm__tpLabel">Take profit</span>
+                          <input
+                            type="number"
+                            className="fxTerminalFieldInput"
+                            step={stepForSymbol(selected)}
+                            value={tradePanelLimitTp}
+                            onChange={(e) => setTradePanelLimitTp(e.target.value)}
+                            placeholder="Optional"
+                          />
+                        </label>
+                      </div>
+                      <div className="fxPendingLimitForm__actions">
+                        <button
+                          type="button"
+                          className="fxPosBtn fxPendingLimitForm__buy"
+                          disabled={limitPanelBusy || !retailSessionSelected.tradeable}
+                          title={retailSessionSelected.tradeable ? undefined : retailSessionSelected.reason}
+                          onClick={() => void placeTradePanelLimit("BUY")}
+                        >
+                          Buy limit
+                        </button>
+                        <button
+                          type="button"
+                          className="fxPosBtn fxPendingLimitForm__sell"
+                          disabled={limitPanelBusy || !retailSessionSelected.tradeable}
+                          title={retailSessionSelected.tradeable ? undefined : retailSessionSelected.reason}
+                          onClick={() => void placeTradePanelLimit("SELL")}
+                        >
+                          Sell limit
+                        </button>
+                      </div>
+                    </div>
+
+                    {pendingOrders.length === 0 && (
+                      <p className="fxPosEmpty">No pending orders.</p>
+                    )}
+                    <div className="fxPosList">
+                      {pendingOrders.map((o) => (
+                        <PendingOrderCard key={o.id} order={o} onCancel={(id) => void cancelPending(id)} />
+                      ))}
+                    </div>
+                  </article>
+                  <article className="panel panelScroll resizablePanel fxPosPanel fxBulkPanel">
+                    <header className="fxPosPanel__head">
+                      <h3>Bulk Actions</h3>
+                    </header>
+                    <div className="fxBulkPanel__inputs">
+                      <label className="fxBulkPanel__field">
+                        <span>Bulk SL</span>
+                        <input
+                          type="number"
+                          className="fxTerminalFieldInput"
+                          placeholder="Bulk SL"
+                          value={bulkStopLoss}
+                          onChange={(e) => setBulkStopLoss(e.target.value)}
+                        />
+                      </label>
+                      <label className="fxBulkPanel__field">
+                        <span>Bulk TP</span>
+                        <input
+                          type="number"
+                          className="fxTerminalFieldInput"
+                          placeholder="Bulk TP"
+                          value={bulkTakeProfit}
+                          onChange={(e) => setBulkTakeProfit(e.target.value)}
+                        />
+                      </label>
+                    </div>
+                    <div className="fxBulkPanel__actions">
+                      <button type="button" className="fxPosBtn" onClick={() => void bulkModify("all")}>
+                        Modify All
+                      </button>
+                      <button type="button" className="fxPosBtn" onClick={() => void bulkModify("selected-symbol")}>
+                        Modify {selected}
+                      </button>
+                      <button type="button" className="fxPosBtn" onClick={() => void bulkClose("all")}>
+                        Close All
+                      </button>
+                      <button type="button" className="fxPosBtn" onClick={() => void bulkClose("losing")}>
+                        Close Losing
+                      </button>
+                      <button type="button" className="fxPosBtn" onClick={() => void bulkClose("profitable")}>
+                        Close Winners
+                      </button>
+                    </div>
+                  </article>
+                </>
               )}
-              <div className="fxPosList">
-                {pendingOrders.map((o) => (
-                  <PendingOrderCard key={o.id} order={o} onCancel={(id) => void cancelPending(id)} />
-                ))}
-              </div>
-            </article>
-            <article className="panel panelScroll resizablePanel fxPosPanel fxBulkPanel">
-              <header className="fxPosPanel__head">
-                <h3>Bulk Actions</h3>
-              </header>
-              <div className="fxBulkPanel__inputs">
-                <label className="fxBulkPanel__field">
-                  <span>Bulk SL</span>
-                  <input
-                    type="number"
-                    className="fxTerminalFieldInput"
-                    placeholder="Bulk SL"
-                    value={bulkStopLoss}
-                    onChange={(e) => setBulkStopLoss(e.target.value)}
-                  />
-                </label>
-                <label className="fxBulkPanel__field">
-                  <span>Bulk TP</span>
-                  <input
-                    type="number"
-                    className="fxTerminalFieldInput"
-                    placeholder="Bulk TP"
-                    value={bulkTakeProfit}
-                    onChange={(e) => setBulkTakeProfit(e.target.value)}
-                  />
-                </label>
-              </div>
-              <div className="fxBulkPanel__actions">
-                <button type="button" className="fxPosBtn" onClick={() => void bulkModify("all")}>
-                  Modify All
-                </button>
-                <button type="button" className="fxPosBtn" onClick={() => void bulkModify("selected-symbol")}>
-                  Modify {selected}
-                </button>
-                <button type="button" className="fxPosBtn" onClick={() => void bulkClose("all")}>
-                  Close All
-                </button>
-                <button type="button" className="fxPosBtn" onClick={() => void bulkClose("losing")}>
-                  Close Losing
-                </button>
-                <button type="button" className="fxPosBtn" onClick={() => void bulkClose("profitable")}>
-                  Close Winners
-                </button>
-              </div>
-            </article>
-          </div>
-        )}
+            </div>
+          )}
 
-        {terminalTab === "history" && (
+          {!toolboxIsMobileBook && terminalTab === "ticket" && (
+            <article className="panel panelScroll resizablePanel fxMobileTicketGuide">
+              <header className="fxPosPanel__head">
+                <h3>Order ticket</h3>
+              </header>
+              <p className="fxMobileTicketGuide__text">
+                The order ticket is in the panel above. Use it to choose market, limit, or stop orders and submit buy or sell trades.
+              </p>
+            </article>
+          )}
+
+        {!toolboxIsMobileBook && terminalTab === "history" && (
           <article className="panel panelScroll resizablePanel fxPosPanel fxHistoryPanel">
             <header className="fxPosPanel__head">
               <h3>Trade History</h3>
@@ -2726,21 +2990,28 @@ function App() {
               </ul>
             )}
           </article>
-        )}
-        {terminalTab === "news" && (
-          <NewsPanel
-            events={news}
-            loading={newsLoading}
-            error={newsError}
-            fetchedAt={newsFetchedAt}
-            impact={newsImpact}
-            onChangeImpact={setNewsImpact}
-            onRefresh={() => void fetchNews(newsImpact, true)}
-            now={newsClock}
-          />
-        )}
-        {terminalTab === "alerts" && <article className="panel panelScroll resizablePanel"><h3>Alerts</h3><p>Alerts center placeholder.</p></article>}
-      </section>}
+          )}
+          {!toolboxIsMobileBook && terminalTab === "news" && (
+            <NewsPanel
+              events={news}
+              loading={newsLoading}
+              error={newsError}
+              fetchedAt={newsFetchedAt}
+              impact={newsImpact}
+              onChangeImpact={setNewsImpact}
+              onRefresh={() => void fetchNews(newsImpact, true)}
+              now={newsClock}
+            />
+          )}
+          {!toolboxIsMobileBook && terminalTab === "alerts" && (
+            <article className="panel panelScroll resizablePanel">
+              <h3>Alerts</h3>
+              <p>Alerts center placeholder.</p>
+            </article>
+          )}
+        </section>
+      )}
+
       </section>
 
       {chartCtxMenu && (
@@ -2787,6 +3058,33 @@ function App() {
         </div>
       )}
 
+      {terminalNarrow && (
+        <nav className="fxMobileDock" aria-label="Trading terminal sections">
+          {(
+            [
+              { id: "chart" as const, label: "Chart", Icon: BarChart3 },
+              { id: "watch" as const, label: "Watch", Icon: List },
+              { id: "trade" as const, label: "Trade", Icon: BadgeDollarSign },
+              { id: "book" as const, label: "Book", Icon: Layers },
+              { id: "account" as const, label: "Account", Icon: Wallet }
+            ] as const
+          ).map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              type="button"
+              className={`fxMobileDockBtn${terminalMobilePane === id ? " fxMobileDockBtn--active" : ""}`}
+              onClick={() => {
+                setOpenMenu(null);
+                setChartCtxMenu(null);
+                setTerminalMobilePane(id);
+              }}
+            >
+              <Icon size={20} aria-hidden strokeWidth={2} />
+              <span className="fxMobileDockBtn__lbl">{label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
     </main>
   );
 }
