@@ -392,11 +392,15 @@ code {
   border-right: 1px solid var(--border);
   background: var(--bg-2);
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
-.term__order { border-right: none; padding: 0 14px 16px; }
+.term__order {
+  border-right: none;
+  padding: 0 14px 16px;
+}
 
 .panelHead {
   display: flex;
@@ -591,7 +595,29 @@ code {
 
 /* ─── order panel ──────────────────────────── */
 
-.term__order .field { margin-bottom: 10px; }
+.term__order .field {
+  margin-bottom: 10px;
+  min-width: 0;
+}
+
+.term__order .field input,
+.term__order .field select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.term__order .fieldRow {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.term__order .fieldRow .field {
+  margin-bottom: 12px;
+  min-width: 0;
+}
 
 .term__order .panelHead {
   margin: 0 -14px 12px;
@@ -602,6 +628,17 @@ code {
   display: flex;
   gap: 8px;
   margin-top: 6px;
+}
+
+.term__order .orderBtnRow {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.term__order .orderBtnRow > .btn {
+  flex: 1 1 calc(50% - 4px);
+  min-width: 0;
+  justify-content: center;
 }
 
 /* ─── footer ───────────────────────────────── */
@@ -766,6 +803,69 @@ code {
   backdrop-filter: blur(6px);
 }
 
+.bracketHoverTip {
+  position: absolute;
+  z-index: 6;
+  min-width: 168px;
+  max-width: 220px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(16, 28, 50, 0.96);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+}
+
+.bracketHoverTip__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.bracketHoverTip__title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #9eb4d9;
+}
+
+.bracketHoverTip__clear {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #c8d6f0;
+  cursor: pointer;
+}
+
+.bracketHoverTip__clear:hover {
+  background: rgba(191, 59, 59, 0.35);
+  color: #fff;
+}
+
+.bracketHoverTip__pnl {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.bracketHoverTip__pnl--ok {
+  color: #43c986;
+}
+
+.bracketHoverTip__pnl--bad {
+  color: #ff7a7a;
+}
+
 .miniBtn {
   background: transparent;
   border: 0;
@@ -785,6 +885,7 @@ code {
 .term__order {
   /** Allow the order form + book list to scroll inside the 280px rail. */
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .bookSection {
@@ -805,6 +906,18 @@ code {
   padding: 2px;
   gap: 2px;
   align-self: stretch;
+}
+
+/** Three slim tabs fit the fixed ~280px order column without overflowing. */
+.bookTabs--3 .bookTab {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 5px 4px;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bookTab {
@@ -871,6 +984,31 @@ code {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.bookRow__symBtn {
+  justify-self: start;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.bookRow__symBtn:hover {
+  color: #8eb4ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.bookRow__symBtn:focus-visible {
+  outline: 2px solid rgba(110, 168, 254, 0.7);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .bookRow__side {
@@ -981,6 +1119,15 @@ code {
   font-weight: 700;
   color: var(--text);
   font-family: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, monospace;
+}
+
+.dtChartCtxMenu__ref {
+  margin: 6px 0 10px;
+  padding: 0 4px 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
 }
 
 .dtChartCtxMenu__action {

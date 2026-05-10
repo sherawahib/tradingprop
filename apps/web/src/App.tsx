@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AccountState, ChallengeProgress, ForexSymbol, Order, Position, PriceTick } from "@paper-trader/shared";
-import { symbolRetailMarketSession } from "@paper-trader/shared";
+import { symbolPipSize, symbolRetailMarketSession } from "@paper-trader/shared";
 import { formatChallengeStatusLabel } from "./challengeUi";
 import type { UTCTimestamp } from "lightweight-charts";
 import { CandlestickChart, ChartColumn, ChartLine, Crosshair, MoveHorizontal, MoveVertical, TrendingUp } from "lucide-react";
@@ -969,7 +969,8 @@ function App() {
     x: number;
     y: number;
     price: number;
-    side: "BUY" | "SELL";
+    sides: ("BUY" | "SELL")[];
+    refMid: number;
   } | null>(null);
   const [leverageInput, setLeverageInput] = useState<string>("100");
   const [terminalTab, setTerminalTab] = useState<TerminalTab>("trade");
@@ -1281,17 +1282,24 @@ function App() {
       return;
     }
     const mid = (tick.bid + tick.ask) / 2;
-    /** Above market → SELL LIMIT, below market → BUY LIMIT. */
-    const side: "BUY" | "SELL" = price >= mid ? "SELL" : "BUY";
+    const pip = symbolPipSize(selected);
+    const halfSpread = Math.max((tick.ask - tick.bid) / 2, 0);
+    const epsilon = Math.max(pip * 0.08, halfSpread * 0.06, Number.EPSILON * 10 * (Math.abs(mid) || 1));
+    /** Below bid/ask mid → Buy limit; above → Sell limit; on mid ±ε offer both. */
+    let sides: ("BUY" | "SELL")[];
+    if (mid - price > epsilon) sides = ["BUY"];
+    else if (price - mid > epsilon) sides = ["SELL"];
+    else sides = ["BUY", "SELL"];
     setChartCtxMenu({
       x: clientX,
       y: clientY,
       price: roundForSymbol(selected, price),
-      side
+      sides,
+      refMid: roundForSymbol(selected, mid)
     });
   }
 
-  async function placeLimitFromChart(): Promise<void> {
+  async function placeLimitFromChart(side: "BUY" | "SELL"): Promise<void> {
     if (!chartCtxMenu) return;
     setError("");
     const sess = symbolRetailMarketSession(selected);
@@ -1311,7 +1319,7 @@ function App() {
       headers: terminalJsonAuthHeaders(),
       body: JSON.stringify({
         symbol: selected,
-        side: chartCtxMenu.side,
+        side,
         type: "LIMIT",
         lotSize: lot,
         price: chartCtxMenu.price
@@ -2747,18 +2755,25 @@ function App() {
             <span className="fxChartCtxMenu__sym">{selected}</span>
             <span className="fxChartCtxMenu__price">{formatForSymbol(selected, chartCtxMenu.price)}</span>
           </div>
-          <button
-            type="button"
-            className={`fxChartCtxMenu__action ${
-              chartCtxMenu.side === "BUY" ? "fxChartCtxMenu__action--buy" : "fxChartCtxMenu__action--sell"
-            }`}
-            onClick={() => void placeLimitFromChart()}
-            disabled={!retailSessionSelected.tradeable}
-            title={retailSessionSelected.tradeable ? undefined : retailSessionSelected.reason}
-          >
-            {chartCtxMenu.side === "BUY" ? "Buy limit" : "Sell limit"}
-            <span className="fxChartCtxMenu__lot">{lotSize.toFixed(2)} lot</span>
-          </button>
+          <p className="fxChartCtxMenu__ref" title="Below mid → Buy limit; above mid → Sell limit.">
+            vs mid <strong>{formatForSymbol(selected, chartCtxMenu.refMid)}</strong>
+            {chartCtxMenu.sides.length > 1 ? " · pick side" : ""}
+          </p>
+          {chartCtxMenu.sides.map((side) => (
+            <button
+              key={side}
+              type="button"
+              className={`fxChartCtxMenu__action ${
+                side === "BUY" ? "fxChartCtxMenu__action--buy" : "fxChartCtxMenu__action--sell"
+              }`}
+              onClick={() => void placeLimitFromChart(side)}
+              disabled={!retailSessionSelected.tradeable}
+              title={retailSessionSelected.tradeable ? undefined : retailSessionSelected.reason}
+            >
+              {side === "BUY" ? "Buy limit" : "Sell limit"}
+              <span className="fxChartCtxMenu__lot">{lotSize.toFixed(2)} lot</span>
+            </button>
+          ))}
           {!retailSessionSelected.tradeable && (
             <div className="fxChartCtxMenu__notice">{retailSessionSelected.reason}</div>
           )}

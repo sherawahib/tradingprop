@@ -418,11 +418,14 @@ export class TradingService {
     return { status: 200, body: result };
   }
 
+  /**
+   * Apply only keys present on `patch` — omits preserved SL/TP when the client
+   * PATCH body omits either field (avoids wiping TP when tightening SL, etc.).
+   */
   updatePosition(
     accountId: string,
     positionId: string,
-    stopLoss?: number,
-    takeProfit?: number
+    patch: Partial<{ stopLoss: number | undefined; takeProfit: number | undefined }>
   ): { status: number; body: Position | { error: string } } {
     const frozen = this.tradingNewRiskFrozenMessage(accountId);
     if (frozen) return { status: 403, body: { error: frozen } };
@@ -430,8 +433,14 @@ export class TradingService {
     this.store.update((s) => {
       const position = s.positions.find((p) => p.id === positionId && ownerOfPosition(p) === accountId);
       if (!position) return;
-      position.stopLoss = typeof stopLoss === "number" ? stopLoss : undefined;
-      position.takeProfit = typeof takeProfit === "number" ? takeProfit : undefined;
+      if (Object.prototype.hasOwnProperty.call(patch, "stopLoss")) {
+        position.stopLoss =
+          typeof patch.stopLoss === "number" && Number.isFinite(patch.stopLoss) ? patch.stopLoss : undefined;
+      }
+      if (Object.prototype.hasOwnProperty.call(patch, "takeProfit")) {
+        position.takeProfit =
+          typeof patch.takeProfit === "number" && Number.isFinite(patch.takeProfit) ? patch.takeProfit : undefined;
+      }
       result = position;
     });
     if (!result) return { status: 404, body: { error: "Position not found." } };

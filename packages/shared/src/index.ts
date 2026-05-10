@@ -282,3 +282,10 @@ export interface AuditEvent {
   details: Record<string, unknown>;
   createdAt: number;
 }
+
+export {
+  estimateBracketExitPnlUsd,
+  riskPipSizeForPnL,
+  PROP_PNL_PIP_VALUE_PER_LOT_USD,
+  type BracketEstimateSide
+} from "./plEstimate";

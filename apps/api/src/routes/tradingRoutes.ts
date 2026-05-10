@@ -46,7 +46,17 @@ export function registerTradingRoutes(app: Express, ctx: AppContext): void {
 
   app.patch("/positions/:id", optionalBearerAuth, (req, res) => {
     const aid = actorId(req as AuthedRequest);
-    const out = ctx.tradingService.updatePosition(aid, String(req.params.id), req.body?.stopLoss, req.body?.takeProfit);
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const patch: Partial<{ stopLoss: number | undefined; takeProfit: number | undefined }> = {};
+    if (Object.prototype.hasOwnProperty.call(body, "stopLoss")) {
+      const v = body.stopLoss;
+      patch.stopLoss = typeof v === "number" && Number.isFinite(v) ? v : undefined;
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "takeProfit")) {
+      const v = body.takeProfit;
+      patch.takeProfit = typeof v === "number" && Number.isFinite(v) ? v : undefined;
+    }
+    const out = ctx.tradingService.updatePosition(aid, String(req.params.id), patch);
     ctx.notifyState();
     res.status(out.status).json(out.body);
   });

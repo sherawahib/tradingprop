@@ -183,3 +183,18 @@ export async function apiCancelOrder(id: string): Promise<{ ok: boolean; error?:
   if (!r.ok) return { ok: false, error: data.error ?? `Cancel failed (${r.status})` };
   return { ok: true };
 }
+
+/** Only fields present in `patch` are updated; `null` clears SL/TP; omitted keys stay unchanged. */
+export async function apiUpdatePosition(
+  positionId: string,
+  patch: Partial<{ stopLoss: number | null; takeProfit: number | null }>
+): Promise<{ ok: boolean; error?: string }> {
+  const r = await fetch(`${API_BASE}/positions/${encodeURIComponent(positionId)}`, {
+    method: "PATCH",
+    headers: jsonHeaders(),
+    body: JSON.stringify(patch)
+  });
+  const data = (await r.json().catch(() => ({}))) as { error?: string };
+  if (!r.ok) return { ok: false, error: data.error ?? `Modify failed (${r.status})` };
+  return { ok: true };
+}
